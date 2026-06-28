@@ -2,8 +2,13 @@ import { createClient as createSupabaseJs } from "@supabase/supabase-js";
 import { cache } from "react";
 import type { BlogPost } from "@/lib/content";
 import type { Tour } from "@/lib/tours";
+import { normalizeBlogImageUrl } from "@/lib/blog-images";
 import { getSupabaseEnv, isSupabaseConfigured } from "@/lib/supabase/config";
 import { staticBlogPosts, staticTours } from "@/lib/seed-data";
+
+function withNormalizedBlogImage<T extends { image: string }>(post: T): T {
+  return { ...post, image: normalizeBlogImageUrl(post.image) };
+}
 
 function anonClient() {
   const env = getSupabaseEnv();
@@ -45,7 +50,7 @@ function rowToBlogPost(row: Record<string, unknown>): BlogPost {
     excerpt: (row.excerpt as string) ?? "",
     bodyHtml,
     content: htmlToParagraphs(bodyHtml),
-    image: (row.image as string) ?? "",
+    image: normalizeBlogImageUrl((row.image as string) ?? ""),
     date: (row.display_date as string) ?? "",
     category: (row.category as string) ?? "",
     readTime: (row.read_time as string) ?? "5 min read",
@@ -93,7 +98,9 @@ async function loadTourBySlug(slug: string): Promise<Tour | null> {
 }
 
 async function loadPublishedBlogPosts(): Promise<BlogPost[]> {
-  if (!isSupabaseConfigured()) return staticBlogPosts;
+  if (!isSupabaseConfigured()) {
+    return staticBlogPosts.map(withNormalizedBlogImage);
+  }
 
   const { data, error } = await anonClient()
     .from("blog_posts")
@@ -101,13 +108,16 @@ async function loadPublishedBlogPosts(): Promise<BlogPost[]> {
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
-  if (error || !data?.length) return staticBlogPosts;
+  if (error || !data?.length) {
+    return staticBlogPosts.map(withNormalizedBlogImage);
+  }
   return data.map((row) => rowToBlogPost(row));
 }
 
 async function loadBlogPostBySlug(slug: string): Promise<BlogPost | null> {
   if (!isSupabaseConfigured()) {
-    return staticBlogPosts.find((p) => p.slug === slug) ?? null;
+    const post = staticBlogPosts.find((p) => p.slug === slug);
+    return post ? withNormalizedBlogImage(post) : null;
   }
 
   const { data, error } = await anonClient()
@@ -118,7 +128,8 @@ async function loadBlogPostBySlug(slug: string): Promise<BlogPost | null> {
     .maybeSingle();
 
   if (error || !data) {
-    return staticBlogPosts.find((p) => p.slug === slug) ?? null;
+    const post = staticBlogPosts.find((p) => p.slug === slug);
+    return post ? withNormalizedBlogImage(post) : null;
   }
   return rowToBlogPost(data);
 }

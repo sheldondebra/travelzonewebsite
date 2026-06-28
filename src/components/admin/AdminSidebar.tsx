@@ -82,7 +82,7 @@ export function AdminSidebar({ role }: Props) {
 
   return (
     <aside className="admin-sidebar">
-      <nav className="admin-sidebar-nav" aria-label="Admin menu">
+      <nav className="admin-sidebar-nav" id="admin-sidebar-nav" aria-label="Admin menu">
         <ul className="m-0 list-none p-0">
           {visibleSections.map((section, sectionIndex) => (
             <li key={sectionIndex}>

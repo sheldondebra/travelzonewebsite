@@ -13,6 +13,13 @@ export async function AdminSetupBanner() {
   const needed = await isDatabaseSetupNeeded();
   if (!needed) return null;
 
+  const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(
+    /https:\/\/([^.]+)\.supabase\.co/,
+  )?.[1];
+  const sqlEditorUrl = projectRef
+    ? `https://supabase.com/dashboard/project/${projectRef}/sql/new`
+    : "https://supabase.com/dashboard";
+
   return (
     <AdminNotice variant="warning">
       <p className="font-semibold">Database setup required</p>
@@ -20,11 +27,11 @@ export async function AdminSetupBanner() {
         Admin tables are not created yet. Either run{" "}
         <code className="bg-[#f0f0f1] px-1">npm run bootstrap</code> locally
         (requires <code className="bg-[#f0f0f1] px-1">DATABASE_URL</code> or{" "}
-        <code className="bg-[#f0f0f1] px-1">DB_PASSWORD</code> in{" "}
+        <code className="bg-[#f0f0f1] px-1">SUPABASE_DB_PASSWORD</code> in{" "}
         <code className="bg-[#f0f0f1] px-1">.env.local</code>), or paste{" "}
         <code className="bg-[#f0f0f1] px-1">supabase/setup-all.sql</code> in the{" "}
         <a
-          href="https://supabase.com/dashboard/project/xdegzidfeccjeajedxes/sql/new"
+          href={sqlEditorUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="text-[#2271b1] hover:text-[#135e96]"

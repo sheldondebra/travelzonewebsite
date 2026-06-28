@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { JsonLd } from "@/components/JsonLd";
-import { NewsletterSignup } from "@/components/NewsletterSignup";
 import {
   TourDetailAssurance,
   TourDetailBooking,
@@ -83,7 +82,6 @@ export default async function TourDetailPage({ params }: Props) {
         <TourDetailExperiences tour={tour} />
         <TourDetailInclusions tour={tour} />
         <TourDetailAssurance />
-        <NewsletterSignup />
       </main>
       <Footer />
     </>

@@ -58,7 +58,7 @@ export function UsersList({ users, currentUserId }: Props) {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search users"
-          className="admin-input max-w-xs"
+          className="admin-input w-full sm:max-w-xs"
           aria-label="Search users"
         />
       </div>
@@ -94,6 +94,7 @@ export function UsersList({ users, currentUserId }: Props) {
       </ul>
 
       <div className="admin-postbox overflow-hidden p-0">
+        <div className="admin-table-scroll">
         <table className="admin-list-table">
           <thead>
             <tr>
@@ -121,6 +122,7 @@ export function UsersList({ users, currentUserId }: Props) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </>
   );

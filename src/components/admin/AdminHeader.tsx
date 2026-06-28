@@ -3,12 +3,25 @@ import { logoutAction } from "@/app/admin/actions/auth";
 
 type Props = {
   email: string;
+  menuOpen?: boolean;
+  onMenuToggle?: () => void;
 };
 
-export function AdminHeader({ email }: Props) {
+export function AdminHeader({ email, menuOpen = false, onMenuToggle }: Props) {
   return (
     <header className="admin-bar">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        {onMenuToggle ? (
+          <button
+            type="button"
+            className="admin-bar-menu md:hidden"
+            aria-expanded={menuOpen}
+            aria-controls="admin-sidebar-nav"
+            onClick={onMenuToggle}
+          >
+            Menu
+          </button>
+        ) : null}
         <Link href="/admin" className="admin-bar-link font-semibold">
           Travel Zone Ghana
         </Link>

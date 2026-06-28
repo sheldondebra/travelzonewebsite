@@ -7,4 +7,26 @@ services:
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
-        value: 20.11.0
+        value: "20.11.0"
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+        sync: false
+      - key: SPLITSMS_API_KEY
+        sync: false
+      - key: SPLITSMS_SENDER_ID
+        sync: false
+      - key: SPLITSMS_ADMIN_PHONES
+        sync: false
+      - key: NEXT_PUBLIC_USD_TO_GHS_RATE
+        value: "15.5"

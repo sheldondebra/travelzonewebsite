@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { Logo } from "./Logo";
 import { SocialLinks } from "./SocialLinks";
 import { CookieSettingsLink } from "@/components/cookies/CookieSettingsLink";
@@ -47,7 +48,9 @@ function ContactItem({
 
 export function Footer() {
   return (
-    <footer className="bg-navy text-white">
+    <>
+      <NewsletterSignup />
+      <footer className="bg-navy text-white">
       <div className="section-container py-16 lg:py-20">
         <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           <div>
@@ -143,5 +146,6 @@ export function Footer() {
         </div>
       </div>
     </footer>
+    </>
   );
 }

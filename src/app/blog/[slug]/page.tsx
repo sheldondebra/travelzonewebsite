@@ -5,9 +5,12 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { JsonLd } from "@/components/JsonLd";
+import { BlogPostCta } from "@/components/BlogPostCta";
 import { getBlogPostBySlug, getPublishedBlogPosts } from "@/lib/content";
 import { createMetadata } from "@/lib/seo";
 import { blogPostJsonLd, breadcrumbJsonLd } from "@/lib/structured-data";
+
+export const revalidate = 3600;
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -117,24 +120,63 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
         </article>
 
-        <section className="bg-cream py-16 lg:py-20">
+        <BlogPostCta />
+
+        <section className="bg-cream py-16 lg:py-24">
           <div className="section-container">
-            <h2 className="heading-serif mb-8 text-2xl text-navy">
-              More Articles
-            </h2>
-            <div className="grid gap-6 sm:grid-cols-3">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-medium tracking-[0.14em] text-brand-red uppercase">
+                  Keep reading
+                </p>
+                <h2 className="heading-serif mt-2 text-2xl text-navy lg:text-3xl">
+                  More articles
+                </h2>
+              </div>
+              <Link
+                href="/blog"
+                className="inline-flex shrink-0 items-center justify-center rounded-full border-2 border-navy px-6 py-2.5 text-sm font-semibold text-navy transition-colors hover:bg-navy hover:text-white"
+              >
+                View all articles
+              </Link>
+            </div>
+
+            <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {related.map((item) => (
                 <Link
                   key={item.slug}
                   href={`/blog/${item.slug}`}
-                  className="group rounded-2xl bg-white p-5 shadow-sm"
+                  className="group flex h-full flex-col overflow-hidden rounded-2xl border border-parchment bg-white transition-shadow hover:shadow-[0_18px_40px_-24px_rgba(12,26,46,0.35)]"
                 >
-                  <time className="text-[11px] font-medium text-text-muted uppercase">
-                    {item.date}
-                  </time>
-                  <h3 className="mt-2 font-semibold text-navy group-hover:text-brand-red">
-                    {item.title}
-                  </h3>
+                  <div className="relative aspect-[16/10] overflow-hidden">
+                    <Image
+                      src={item.image}
+                      alt={item.title}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                    />
+                    <span className="absolute top-3 left-3 rounded-[3px] bg-navy/85 px-2 py-1 text-[10px] font-semibold tracking-wide text-white uppercase backdrop-blur-sm">
+                      {item.category}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="flex items-center gap-2 text-[11px] font-medium tracking-wide text-text-muted uppercase">
+                      <time>{item.date}</time>
+                      <span aria-hidden>·</span>
+                      <span>{item.readTime}</span>
+                    </div>
+                    <h3 className="heading-serif mt-2 text-lg leading-snug text-navy transition-colors group-hover:text-brand-red">
+                      {item.title}
+                    </h3>
+                    <p className="mt-2 line-clamp-2 flex-1 text-sm leading-relaxed text-text-muted">
+                      {item.excerpt}
+                    </p>
+                    <span className="mt-4 text-sm font-semibold text-brand-red">
+                      Read more →
+                    </span>
+                  </div>
                 </Link>
               ))}
             </div>

@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -31,23 +30,13 @@ type CookieContextValue = {
 const CookieContext = createContext<CookieContextValue | null>(null);
 
 export function CookieProvider({ children }: { children: React.ReactNode }) {
-  const [consent, setConsent] = useState<CookieConsent | null>(null);
-  const [hasAnswered, setHasAnswered] = useState(false);
-  const [showBanner, setShowBanner] = useState(false);
-  const [showPreferences, setShowPreferences] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
+  const [consent, setConsent] = useState<CookieConsent | null>(() => {
     const stored = readStoredConsent();
-    if (stored) {
-      setConsent(stored);
-      setHasAnswered(true);
-      setShowBanner(false);
-    } else {
-      setShowBanner(true);
-    }
-    setReady(true);
-  }, []);
+    return stored;
+  });
+  const [hasAnswered, setHasAnswered] = useState(() => Boolean(readStoredConsent()));
+  const [showBanner, setShowBanner] = useState(() => !readStoredConsent());
+  const [showPreferences, setShowPreferences] = useState(false);
 
   const persist = useCallback((preferences: CookiePreferences) => {
     const saved = saveConsent(preferences);
@@ -61,7 +50,7 @@ export function CookieProvider({ children }: { children: React.ReactNode }) {
     () => ({
       consent,
       hasAnswered,
-      showBanner: ready && showBanner,
+      showBanner,
       showPreferences,
       openPreferences: () => {
         setShowPreferences(true);
@@ -75,7 +64,7 @@ export function CookieProvider({ children }: { children: React.ReactNode }) {
       rejectAll: () => persist(defaultPreferences),
       savePreferences: persist,
     }),
-    [consent, hasAnswered, ready, showBanner, showPreferences, persist],
+    [consent, hasAnswered, showBanner, showPreferences, persist],
   );
 
   return <CookieContext.Provider value={value}>{children}</CookieContext.Provider>;

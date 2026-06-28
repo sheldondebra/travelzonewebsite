@@ -12,7 +12,6 @@ export default async function sitemap() {
   const staticRoutes = [
     { path: "", priority: 1 },
     { path: "/tours", priority: 0.9 },
-    { path: "/book", priority: 0.9 },
     { path: "/consultation", priority: 0.9 },
     { path: "/about", priority: 0.8 },
     { path: "/what-we-do", priority: 0.8 },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   cookieCategories,
@@ -45,6 +45,88 @@ function Toggle({
   );
 }
 
+function CookiePreferencesPanel({
+  initial,
+  onSave,
+  onAcceptAll,
+  onClose,
+}: {
+  initial: CookiePreferences;
+  onSave: (preferences: CookiePreferences) => void;
+  onAcceptAll: () => void;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = useState(initial);
+
+  return (
+    <div className="max-h-[70vh] overflow-y-auto p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-navy">Cookie preferences</p>
+          <p className="mt-1 text-xs text-text-muted">
+            Choose which cookies Travel Zone may use.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-xs font-semibold text-text-muted hover:text-navy"
+          aria-label="Close preferences"
+        >
+          ✕
+        </button>
+      </div>
+
+      <ul className="mt-4 space-y-3">
+        {cookieCategories.map((category) => {
+          const enabled = category.id === "necessary" ? true : draft[category.id];
+
+          return (
+            <li key={category.id} className="border border-gray-100 bg-cream/50 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-navy">{category.label}</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-text-muted">
+                    {category.description}
+                  </p>
+                </div>
+                <Toggle
+                  label={`${category.label} cookies`}
+                  checked={enabled}
+                  disabled={category.required}
+                  onChange={(value) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      [category.id]: value,
+                    }))
+                  }
+                />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onSave(draft)}
+          className="btn-primary px-4 py-2 text-xs"
+        >
+          Save preferences
+        </button>
+        <button
+          type="button"
+          onClick={onAcceptAll}
+          className="border border-navy px-4 py-2 text-xs font-semibold text-navy hover:bg-navy hover:text-white"
+        >
+          Accept all
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function CookieConsent() {
   const {
     showBanner,
@@ -56,14 +138,6 @@ export function CookieConsent() {
     savePreferences,
     consent,
   } = useCookies();
-
-  const [draft, setDraft] = useState<CookiePreferences>(defaultPreferences);
-
-  useEffect(() => {
-    if (showPreferences) {
-      setDraft(consent?.preferences ?? defaultPreferences);
-    }
-  }, [showPreferences, consent]);
 
   if (!showBanner) return null;
 
@@ -108,75 +182,13 @@ export function CookieConsent() {
               </div>
             </div>
           ) : (
-            <div className="max-h-[70vh] overflow-y-auto p-4 sm:p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-navy">Cookie preferences</p>
-                  <p className="mt-1 text-xs text-text-muted">
-                    Choose which cookies Travel Zone may use.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={closePreferences}
-                  className="text-xs font-semibold text-text-muted hover:text-navy"
-                  aria-label="Close preferences"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <ul className="mt-4 space-y-3">
-                {cookieCategories.map((category) => {
-                  const enabled =
-                    category.id === "necessary" ? true : draft[category.id];
-
-                  return (
-                    <li
-                      key={category.id}
-                      className="border border-gray-100 bg-cream/50 p-3"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-bold text-navy">{category.label}</p>
-                          <p className="mt-1 text-[11px] leading-relaxed text-text-muted">
-                            {category.description}
-                          </p>
-                        </div>
-                        <Toggle
-                          label={`${category.label} cookies`}
-                          checked={enabled}
-                          disabled={category.required}
-                          onChange={(value) =>
-                            setDraft((prev) => ({
-                              ...prev,
-                              [category.id]: value,
-                            }))
-                          }
-                        />
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => savePreferences(draft)}
-                  className="btn-primary px-4 py-2 text-xs"
-                >
-                  Save preferences
-                </button>
-                <button
-                  type="button"
-                  onClick={acceptAll}
-                  className="border border-navy px-4 py-2 text-xs font-semibold text-navy hover:bg-navy hover:text-white"
-                >
-                  Accept all
-                </button>
-              </div>
-            </div>
+            <CookiePreferencesPanel
+              key={consent?.timestamp ?? "default"}
+              initial={consent?.preferences ?? defaultPreferences}
+              onSave={savePreferences}
+              onAcceptAll={acceptAll}
+              onClose={closePreferences}
+            />
           )}
         </div>
       </div>

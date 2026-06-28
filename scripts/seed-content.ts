@@ -5,6 +5,7 @@ import {
   staticTours,
 } from "@/lib/seed-data";
 import { loadLocalEnv } from "./load-env";
+import { resolveBlogImageUrl } from "./upload-blog-images";
 
 loadLocalEnv();
 
@@ -62,13 +63,14 @@ async function seed() {
   }
 
   for (const post of staticBlogPosts) {
+    const image = await resolveBlogImageUrl(post.image);
     const { error } = await supabase.from("blog_posts").upsert(
       {
         slug: post.slug,
         title: post.title,
         excerpt: post.excerpt,
         body_html: paragraphsToHtml(post.content),
-        image: post.image,
+        image,
         category: post.category,
         read_time: post.readTime,
         display_date: post.date,

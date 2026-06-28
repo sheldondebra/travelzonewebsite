@@ -45,6 +45,7 @@ export async function saveBlogPostAction(formData: FormData) {
       id,
       authorId: user.id,
     });
+    revalidatePath("/");
     revalidatePath("/blog");
     revalidatePath(`/blog/${post.slug}`);
     revalidatePath("/admin/blog");
@@ -61,6 +62,7 @@ export async function deleteBlogPostAction(id: string) {
   await requireAdmin();
 
   await deleteBlogPost(id);
+  revalidatePath("/");
   revalidatePath("/blog");
   revalidatePath("/admin/blog");
   redirect("/admin/blog");

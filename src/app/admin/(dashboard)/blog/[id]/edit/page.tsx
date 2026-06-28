@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { DeleteBlogButton } from "@/components/admin/DeleteBlogButton";
+import { AdminNotice, AdminPageHeader } from "@/components/admin/AdminChrome";
 import { BlogForm } from "@/components/admin/BlogForm";
 import { getAdminBlogPost } from "@/lib/content-admin";
 
@@ -15,17 +16,15 @@ export default async function EditBlogPage({ params, searchParams }: Props) {
   if (!post) notFound();
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="heading-serif text-2xl text-navy">Edit blog post</h1>
-          {saved ? (
-            <p className="mt-1 text-sm text-accent-green">Post saved.</p>
-          ) : null}
-        </div>
-        <DeleteBlogButton id={id} />
-      </div>
+    <>
+      <AdminPageHeader
+        title="Edit Post"
+        actions={<DeleteBlogButton id={id} />}
+      />
+      {saved ? (
+        <AdminNotice variant="success">Post saved.</AdminNotice>
+      ) : null}
       <BlogForm post={post} />
-    </div>
+    </>
   );
 }

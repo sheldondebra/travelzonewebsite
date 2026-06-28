@@ -9,7 +9,7 @@ export async function DeleteBlogButton({ id }: { id: string }) {
     <form action={deleteBlogPostAction.bind(null, id)}>
       <button
         type="submit"
-        className="text-sm font-semibold text-brand-red hover:underline"
+        className="admin-row-action-delete"
       >
         Delete
       </button>

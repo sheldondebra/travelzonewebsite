@@ -16,6 +16,7 @@ export const metadata: Metadata = createMetadata({
   description:
     "Select a tour package, enter your details, and pay securely online with Paystack. Travel Zone Ghana — East Legon, Accra.",
   path: "/book",
+  noIndex: true,
 });
 
 type Props = {

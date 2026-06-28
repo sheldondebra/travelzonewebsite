@@ -2,7 +2,7 @@ export const contactInfo = {
   address: "#2 Boundary Road, East Legon, Accra",
   phones: ["0244 274 663", "0244 963 557", "0273 332 233"],
   phoneHrefs: ["+233244274663", "+233244963557", "+233273332233"],
-  email: "travelzonne@yahoo.com",
+  email: "travelzone@yahoo.com",
   hours: "Mon – Fri: 8:30 AM – 5:30 PM · Sat: 9:00 AM – 2:00 PM",
   mapQuery: "Boundary+Road+East+Legon+Accra+Ghana",
 };

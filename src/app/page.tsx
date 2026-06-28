@@ -13,6 +13,8 @@ import { SocialFollow } from "@/components/SocialFollow";
 import { Footer } from "@/components/Footer";
 import { createMetadata } from "@/lib/seo";
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = createMetadata({
   title: "Travel Agency in East Legon, Accra",
   description:

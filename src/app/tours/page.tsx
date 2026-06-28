@@ -9,7 +9,7 @@ import { createMetadata } from "@/lib/seo";
 export const metadata: Metadata = createMetadata({
   title: "Tour Packages",
   description:
-    "Book the Dubai Summer Getaway — 4 nights, visa, breakfast, city tour, desert safari, and marina cruise. Travel Zone Ghana, East Legon.",
+    "Book international and domestic tour packages with Travel Zone Ghana — flights, hotels, visas, and guided experiences from East Legon, Accra.",
   path: "/tours",
   ogImage:
     "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=1200&q=80",

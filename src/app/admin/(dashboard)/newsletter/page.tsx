@@ -16,6 +16,7 @@ export default async function AdminNewsletterPage() {
       />
 
       <div className="admin-postbox overflow-hidden p-0">
+        <div className="admin-table-scroll">
         <table className="admin-list-table">
           <thead>
             <tr>
@@ -42,6 +43,7 @@ export default async function AdminNewsletterPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </>
   );

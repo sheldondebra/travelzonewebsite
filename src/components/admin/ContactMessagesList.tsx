@@ -59,11 +59,12 @@ export function ContactMessagesList({ messages }: Props) {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search messages"
-          className="admin-input max-w-xs"
+          className="admin-input w-full sm:max-w-xs"
         />
       </div>
 
       <div className="admin-postbox overflow-hidden p-0">
+        <div className="admin-table-scroll">
         <table className="admin-list-table">
           <thead>
             <tr>
@@ -111,6 +112,7 @@ export function ContactMessagesList({ messages }: Props) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </>
   );

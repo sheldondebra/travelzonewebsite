@@ -303,7 +303,7 @@ export const staticBlogPosts: BlogPost[] = [
       "We currently serve corporate clients in banking, mining, NGOs, and government agencies. Contact us for a custom corporate travel proposal tailored to your organization's needs.",
     ],
     image:
-      "https://images.unsplash.com/photo-1523800503107-5bc3ce2a3a7d?w=800&q=80",
+      "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1200&q=80",
     date: "December 20, 2025",
     category: "Corporate",
     readTime: "5 min read",

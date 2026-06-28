@@ -6,6 +6,7 @@ import { PhoneIcon } from "@/components/ContactIcons";
 import { getBookingById } from "@/lib/bookings-store";
 import { contactInfo } from "@/lib/content";
 import { createMetadata } from "@/lib/seo";
+import { getSiteSettings } from "@/lib/site-settings";
 
 type Props = {
   searchParams: Promise<{ reference?: string; ref?: string; paid?: string }>;
@@ -16,6 +17,25 @@ export default async function BookingConfirmationPage({ searchParams }: Props) {
   const bookingId = ref;
   const booking = bookingId ? await getBookingById(bookingId) : null;
   const isPaid = paid === "1" || booking?.paymentStatus === "paid";
+  const settings = await getSiteSettings();
+  const smsReady =
+    settings.splitsms.enabled &&
+    Boolean(settings.splitsms.apiKey.trim()) &&
+    settings.notifications.smsCustomerOnBookingPaid;
+  const emailReady =
+    settings.smtp.enabled &&
+    Boolean(settings.smtp.host.trim()) &&
+    settings.notifications.emailCustomerOnBookingPaid;
+
+  const confirmationNote = isPaid
+    ? smsReady && emailReady
+      ? "Your booking is confirmed. We sent a confirmation by SMS and email."
+      : smsReady
+        ? "Your booking is confirmed. We sent a confirmation SMS to your phone."
+        : emailReady
+          ? "Your booking is confirmed. We sent a confirmation email with your receipt."
+          : "Your booking is confirmed. Our team will contact you within one business day."
+    : "Your payment did not go through. Your details are below if you want to try again or call us.";
 
   return (
     <>
@@ -39,9 +59,7 @@ export default async function BookingConfirmationPage({ searchParams }: Props) {
                 {isPaid ? "You're all set" : "Payment not completed"}
               </h1>
               <p className="mt-3 text-sm leading-relaxed text-text-muted">
-                {isPaid
-                  ? "Your booking is confirmed. Review your details below — we also sent an SMS to your phone."
-                  : "Your payment did not go through. Your details are below if you want to try again or call us."}
+                {confirmationNote}
               </p>
             </div>
 

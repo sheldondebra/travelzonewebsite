@@ -13,7 +13,9 @@
     "bootstrap": "tsx scripts/bootstrap.ts",
     "db:setup": "tsx scripts/apply-migrations.ts",
     "create-admin": "tsx scripts/create-admin.ts",
-    "seed": "tsx scripts/seed-content.ts"
+    "seed": "tsx scripts/seed-content.ts",
+    "upload-blog-images": "tsx scripts/upload-blog-images.ts",
+    "fix-blog-images": "tsx scripts/fix-blog-images.ts"
   },
   "dependencies": {
     "@paystack/inline-js": "^2.23.1",

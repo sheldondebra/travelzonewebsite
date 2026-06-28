@@ -61,7 +61,7 @@ export function ToursList({ tours, role }: Props) {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search tours"
-          className="admin-input max-w-xs"
+          className="admin-input w-full sm:max-w-xs"
           aria-label="Search tours"
         />
       </div>
@@ -97,6 +97,7 @@ export function ToursList({ tours, role }: Props) {
       </ul>
 
       <div className="admin-postbox overflow-hidden p-0">
+        <div className="admin-table-scroll">
         <table className="admin-list-table">
           <thead>
             <tr>
@@ -131,6 +132,7 @@ export function ToursList({ tours, role }: Props) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </>
   );
