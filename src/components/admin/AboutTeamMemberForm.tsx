@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { saveAboutTeamMemberAction } from "@/app/admin/actions/about-team";
-import { AdminNotice } from "@/components/admin/AdminChrome";
+import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import type { AdminAboutTeamMember } from "@/lib/about-team";
 import type { ContentStatus } from "@/lib/content-types";
@@ -15,6 +15,12 @@ type Props = {
 export function AboutTeamMemberForm({ member }: Props) {
   const isNew = !member;
   const [state, formAction, pending] = useActionState(saveAboutTeamMemberAction, undefined);
+
+  useAdminActionFeedback(state, pending, {
+    loadingMessage: isNew ? "Creating team member…" : "Saving team member…",
+    refresh: false,
+  });
+
   const [name, setName] = useState(member?.name ?? "");
   const [role, setRole] = useState(member?.role ?? "");
   const [bio, setBio] = useState(member?.bio ?? "");
@@ -34,12 +40,6 @@ export function AboutTeamMemberForm({ member }: Props) {
       </div>
 
       <div className="admin-postbox-body space-y-4">
-        {state ? (
-          <AdminNotice variant={state.success ? "success" : "error"}>
-            {state.success ? state.message : state.error}
-          </AdminNotice>
-        ) : null}
-
         {member ? <input type="hidden" name="id" value={member.id} /> : null}
 
         <div className="admin-form-grid-2">

@@ -6,6 +6,7 @@ import { getSplitSmsBalance, sendTestSms, type SplitSmsBalance } from "@/lib/spl
 import {
   saveNotificationSettings,
   savePaystackSettings,
+  saveResendSettings,
   saveSmtpSettings,
   saveSplitSmsSettings,
 } from "@/lib/site-settings";
@@ -98,6 +99,31 @@ export async function saveSmtpSettingsAction(
   }
 }
 
+export async function saveResendSettingsAction(
+  _prev: SettingsActionResult | undefined,
+  formData: FormData,
+): Promise<SettingsActionResult> {
+  try {
+    const { user } = await requireAdmin();
+    await saveResendSettings(
+      {
+        enabled: checkbox(formData.get("enabled")),
+        apiKey: String(formData.get("apiKey") ?? ""),
+        fromEmail: String(formData.get("fromEmail") ?? ""),
+        fromName: String(formData.get("fromName") ?? "Travel Zone Ghana"),
+      },
+      user.id,
+    );
+    revalidatePath("/admin/settings");
+    return { success: true, message: "Resend settings saved." };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Could not save Resend settings.",
+    };
+  }
+}
+
 export async function saveNotificationSettingsAction(
   _prev: SettingsActionResult | undefined,
   formData: FormData,
@@ -149,7 +175,7 @@ export async function testSmtpAction(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "SMTP test failed.",
+      error: error instanceof Error ? error.message : "Email test failed.",
     };
   }
 }

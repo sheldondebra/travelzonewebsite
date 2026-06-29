@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState, useTransition } from "react";
+import { useRef, useTransition } from "react";
 import { uploadMediaAction } from "@/app/admin/actions/upload";
+import { useAdminToast } from "@/components/admin/AdminToastProvider";
 
 type Props = {
   label: string;
@@ -13,8 +14,8 @@ type Props = {
 
 export function ImageUpload({ label, value, folder, onChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const { success, error, setBusy } = useAdminToast();
 
   function handleUpload(file: File) {
     const formData = new FormData();
@@ -22,13 +23,18 @@ export function ImageUpload({ label, value, folder, onChange }: Props) {
     formData.set("folder", folder);
 
     startTransition(async () => {
-      setError(null);
-      const result = await uploadMediaAction(formData);
-      if (!result.success) {
-        setError(result.error);
-        return;
+      setBusy(true, "Uploading image…");
+      try {
+        const result = await uploadMediaAction(formData);
+        if (result.success) {
+          success("Image uploaded.");
+          onChange(result.url);
+          return;
+        }
+        error(result.error);
+      } finally {
+        setBusy(false);
       }
-      onChange(result.url);
     });
   }
 
@@ -69,7 +75,6 @@ export function ImageUpload({ label, value, folder, onChange }: Props) {
           />
         </div>
       </div>
-          {error ? <p className="mt-2 text-[13px] text-[#d63638]">{error}</p> : null}
     </div>
   );
 }

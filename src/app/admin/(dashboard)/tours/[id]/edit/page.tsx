@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AdminNotice, AdminPageHeader } from "@/components/admin/AdminChrome";
+import { AdminPageHeader } from "@/components/admin/AdminChrome";
+import { AdminSavedQueryToast } from "@/components/admin/AdminSavedQueryToast";
 import { DeleteTourButton } from "@/components/admin/DeleteTourButton";
 import { TourForm } from "@/components/admin/TourForm";
 import { getAdminTour } from "@/lib/content-admin";
@@ -14,12 +15,13 @@ type Props = {
 export default async function EditTourPage({ params, searchParams }: Props) {
   const { role } = await requireStaff();
   const { id } = await params;
-  const { saved } = await searchParams;
+  await searchParams;
   const tour = await getAdminTour(id);
   if (!tour) notFound();
 
   return (
     <>
+      <AdminSavedQueryToast message="Tour updated." />
       <AdminPageHeader
         title="Edit Tour"
         description={tour.title}
@@ -40,10 +42,6 @@ export default async function EditTourPage({ params, searchParams }: Props) {
           </div>
         }
       />
-
-      {saved ? (
-        <AdminNotice variant="success">Tour updated.</AdminNotice>
-      ) : null}
 
       <TourForm tour={tour} />
 

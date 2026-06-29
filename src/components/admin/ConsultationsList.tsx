@@ -29,6 +29,7 @@ const filters: { id: ConsultationFilter; label: string }[] = [
 export function ConsultationsList({ bookings }: Props) {
   const [filter, setFilter] = useState<ConsultationFilter>("all");
   const [query, setQuery] = useState("");
+  const stats = getConsultationStats(bookings);
 
   const filtered = useMemo(
     () =>
@@ -42,27 +43,49 @@ export function ConsultationsList({ bookings }: Props) {
 
   return (
     <>
-      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <ul className="admin-subsubsub">
-          {filters.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className={filter === item.id ? "current" : ""}
-                onClick={() => setFilter(item.id)}
-              >
-                {item.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search consultations"
-          className="admin-input w-full sm:max-w-xs"
-        />
+      <div className="admin-consultations-top">
+        <div className="admin-consultations-stats">
+          <div className="admin-consultations-stat">
+            <span className="admin-consultations-stat-value">{stats.total}</span>
+            <span className="admin-consultations-stat-label">Total requests</span>
+          </div>
+          <div className="admin-consultations-stat">
+            <span className="admin-consultations-stat-value">{stats.pending}</span>
+            <span className="admin-consultations-stat-label">Pending</span>
+          </div>
+          <div className="admin-consultations-stat">
+            <span className="admin-consultations-stat-value">{stats.confirmed}</span>
+            <span className="admin-consultations-stat-label">Confirmed</span>
+          </div>
+          <div className="admin-consultations-stat">
+            <span className="admin-consultations-stat-value">{stats.completed}</span>
+            <span className="admin-consultations-stat-label">Completed</span>
+          </div>
+        </div>
+
+        <div className="admin-consultations-toolbar">
+          <ul className="admin-subsubsub">
+            {filters.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className={filter === item.id ? "current" : ""}
+                  onClick={() => setFilter(item.id)}
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search consultations"
+            className="admin-input w-full"
+            aria-label="Search consultations"
+          />
+        </div>
       </div>
 
       <div className="admin-postbox overflow-hidden p-0">
@@ -122,26 +145,5 @@ export function ConsultationsList({ bookings }: Props) {
         </div>
       </div>
     </>
-  );
-}
-
-export function ConsultationsSummary({ bookings }: Props) {
-  const stats = getConsultationStats(bookings);
-
-  return (
-    <ul className="admin-glance-list">
-      <li>
-        <strong>{stats.total}</strong> total requests
-      </li>
-      <li>
-        <strong>{stats.pending}</strong> pending
-      </li>
-      <li>
-        <strong>{stats.confirmed}</strong> confirmed
-      </li>
-      <li>
-        <strong>{stats.completed}</strong> completed
-      </li>
-    </ul>
   );
 }

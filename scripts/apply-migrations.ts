@@ -1,5 +1,5 @@
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import { readdirSync, readFileSync } from "fs";
+import { join, resolve } from "path";
 import postgres from "postgres";
 import { getDatabaseUrl } from "./db-url";
 import { loadLocalEnv } from "./load-env";
@@ -31,12 +31,24 @@ Or paste supabase/setup-all.sql into:
     process.exit(1);
   }
 
-  const sqlFile = resolve(process.cwd(), "supabase/setup-all.sql");
-  const migrationSql = readFileSync(sqlFile, "utf-8");
   const sql = postgres(databaseUrl, { max: 1, ssl: "require" });
 
   try {
-    await sql.unsafe(migrationSql);
+    const setupFile = resolve(process.cwd(), "supabase/setup-all.sql");
+    await sql.unsafe(readFileSync(setupFile, "utf-8"));
+    console.log("Applied supabase/setup-all.sql");
+
+    const migrationsDir = resolve(process.cwd(), "supabase/migrations");
+    const migrationFiles = readdirSync(migrationsDir)
+      .filter((file) => file.endsWith(".sql"))
+      .sort();
+
+    for (const file of migrationFiles) {
+      const migrationSql = readFileSync(join(migrationsDir, file), "utf-8");
+      await sql.unsafe(migrationSql);
+      console.log(`Applied supabase/migrations/${file}`);
+    }
+
     console.log("Database setup complete.");
   } finally {
     await sql.end();

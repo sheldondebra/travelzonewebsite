@@ -5,10 +5,12 @@ import type {
   ConsultationAvailabilitySettings,
   NotificationSettings,
   PaystackSettings,
+  ResendSettings,
   SiteSettings,
   SplitSmsSettings,
   SmtpSettings,
 } from "@/lib/settings-types";
+import type { EmailDeliveryConfig } from "@/lib/email-delivery";
 import {
   DEFAULT_CONSULTATION_AVAILABILITY,
   normalizeConsultationAvailability,
@@ -34,6 +36,12 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     secure: false,
     user: "",
     password: "",
+    fromEmail: "",
+    fromName: "Travel Zone Ghana",
+  },
+  resend: {
+    enabled: false,
+    apiKey: "",
     fromEmail: "",
     fromName: "Travel Zone Ghana",
   },
@@ -68,6 +76,12 @@ function settingsFromEnv(): Partial<SiteSettings> {
       adminPhones: process.env.SPLITSMS_ADMIN_PHONES?.trim() ?? "",
       baseUrl: process.env.SPLITSMS_BASE_URL?.trim() || "https://www.splitsms.com",
     },
+    resend: {
+      enabled: Boolean(process.env.RESEND_API_KEY?.trim()),
+      apiKey: process.env.RESEND_API_KEY?.trim() ?? "",
+      fromEmail: process.env.RESEND_FROM_EMAIL?.trim() ?? "",
+      fromName: process.env.RESEND_FROM_NAME?.trim() || "Travel Zone Ghana",
+    },
   };
 }
 
@@ -76,6 +90,7 @@ function deepMergeSettings(base: SiteSettings, patch: Partial<SiteSettings>): Si
     paystack: { ...base.paystack, ...patch.paystack },
     splitsms: { ...base.splitsms, ...patch.splitsms },
     smtp: { ...base.smtp, ...patch.smtp },
+    resend: { ...base.resend, ...patch.resend },
     notifications: { ...base.notifications, ...patch.notifications },
     consultationAvailability: normalizeConsultationAvailability(
       patch.consultationAvailability ?? base.consultationAvailability,
@@ -140,11 +155,22 @@ function isSplitSmsReady(settings: SiteSettings) {
 }
 
 function isSmtpReady(settings: SiteSettings) {
+  if (!settings.smtp.enabled) return false;
+  if (!settings.smtp.host.trim() || !settings.smtp.fromEmail.trim()) return false;
+  if (settings.smtp.user.trim() && !settings.smtp.password.trim()) return false;
+  return true;
+}
+
+function isResendReady(settings: SiteSettings) {
   return (
-    settings.smtp.enabled &&
-    Boolean(settings.smtp.host.trim()) &&
-    Boolean(settings.smtp.fromEmail.trim())
+    settings.resend.enabled &&
+    Boolean(settings.resend.apiKey.trim()) &&
+    Boolean(settings.resend.fromEmail.trim())
   );
+}
+
+function isEmailReady(settings: SiteSettings) {
+  return isResendReady(settings) || isSmtpReady(settings);
 }
 
 export async function isPaystackConfiguredAsync() {
@@ -183,11 +209,18 @@ export async function getAdminSettingsView(): Promise<AdminSettingsView> {
       password: "",
       hasPassword: Boolean(settings.smtp.password),
     },
+    resend: {
+      ...settings.resend,
+      apiKey: "",
+      hasApiKey: Boolean(settings.resend.apiKey),
+    },
     notifications: settings.notifications,
     status: {
       paystackReady: isPaystackReady(settings),
       splitsmsReady: isSplitSmsReady(settings),
       smtpReady: isSmtpReady(settings),
+      resendReady: isResendReady(settings),
+      emailReady: isEmailReady(settings),
     },
     revision,
   };
@@ -254,15 +287,30 @@ export async function saveSplitSmsSettings(
 
 export async function saveSmtpSettings(input: SmtpSettings, userId: string): Promise<void> {
   const current = await getSiteSettings();
+  const port = Number(input.port) || 587;
   const next: SiteSettings = {
     ...current,
     smtp: {
       enabled: input.enabled,
       host: input.host.trim(),
-      port: Number(input.port) || 587,
-      secure: input.secure,
+      port,
+      secure: input.secure || port === 465,
       user: input.user.trim(),
       password: preserveSecret(input.password, current.smtp.password),
+      fromEmail: input.fromEmail.trim(),
+      fromName: input.fromName.trim() || "Travel Zone Ghana",
+    },
+  };
+  await persistSettings(next, userId);
+}
+
+export async function saveResendSettings(input: ResendSettings, userId: string): Promise<void> {
+  const current = await getSiteSettings();
+  const next: SiteSettings = {
+    ...current,
+    resend: {
+      enabled: input.enabled,
+      apiKey: preserveSecret(input.apiKey, current.resend.apiKey),
       fromEmail: input.fromEmail.trim(),
       fromName: input.fromName.trim() || "Travel Zone Ghana",
     },
@@ -312,9 +360,30 @@ export async function getSplitSmsConfig() {
 
 export async function getSmtpConfig() {
   const settings = await getSiteSettings();
-  if (!settings.smtp.enabled) return null;
-  if (!settings.smtp.host.trim() || !settings.smtp.fromEmail.trim()) return null;
+  if (!isSmtpReady(settings)) return null;
   return settings.smtp;
+}
+
+export async function getResendConfig() {
+  const settings = await getSiteSettings();
+  if (!isResendReady(settings)) return null;
+  return settings.resend;
+}
+
+export async function getEmailDeliveryConfig(): Promise<EmailDeliveryConfig | null> {
+  const settings = await getSiteSettings();
+  if (isResendReady(settings)) {
+    return { provider: "resend", config: settings.resend };
+  }
+  if (isSmtpReady(settings)) {
+    return { provider: "smtp", config: settings.smtp };
+  }
+  return null;
+}
+
+export async function isEmailConfigured() {
+  const settings = await getSiteSettings();
+  return isEmailReady(settings);
 }
 
 export async function getNotificationSettings() {

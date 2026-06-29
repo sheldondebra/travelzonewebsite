@@ -1,17 +1,18 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useActionState, useEffect, useState, type ReactNode } from "react";
+import { Suspense, useActionState, useState, type ReactNode } from "react";
 import {
   saveNotificationSettingsAction,
   savePaystackSettingsAction,
+  saveResendSettingsAction,
   saveSmtpSettingsAction,
   saveSplitSmsSettingsAction,
   testSplitSmsAction,
   testSmtpAction,
-  type SettingsActionResult,
 } from "@/app/admin/actions/settings";
 import { AdminNotice, AdminWidget } from "@/components/admin/AdminChrome";
+import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
 import { SplitSmsBalancePanel } from "@/components/admin/SplitSmsBalancePanel";
 import type { AdminSettingsView } from "@/lib/settings-types";
 import type { SplitSmsBalance } from "@/lib/splitsms";
@@ -28,29 +29,9 @@ type Props = {
 const tabs: { id: Tab; label: string; readyKey?: keyof AdminSettingsView["status"] }[] = [
   { id: "paystack", label: "Paystack", readyKey: "paystackReady" },
   { id: "splitsms", label: "SplitSMS", readyKey: "splitsmsReady" },
-  { id: "smtp", label: "SMTP", readyKey: "smtpReady" },
+  { id: "smtp", label: "Email", readyKey: "emailReady" },
   { id: "notifications", label: "Notifications" },
 ];
-
-function useRefreshOnSuccess(state: SettingsActionResult | undefined) {
-  const router = useRouter();
-
-  useEffect(() => {
-    if (state?.success) {
-      router.refresh();
-    }
-  }, [router, state]);
-}
-
-function ActionFeedback({ state }: { state: SettingsActionResult | undefined }) {
-  if (!state) return null;
-
-  return (
-    <AdminNotice variant={state.success ? "success" : "error"}>
-      {state.success ? state.message : state.error}
-    </AdminNotice>
-  );
-}
 
 function Toggle({
   id,
@@ -148,15 +129,13 @@ function PaystackPanel({
   revision: string;
 }) {
   const [state, action, pending] = useActionState(savePaystackSettingsAction, undefined);
-  useRefreshOnSuccess(state);
+  useAdminActionFeedback(state, pending, { loadingMessage: "Saving Paystack settings…" });
 
   return (
     <AdminWidget title="Paystack payments">
       <p className="admin-field-hint mt-0">
         Accept card and mobile money payments for tour bookings.
       </p>
-
-      <ActionFeedback state={state} />
 
       <form key={`paystack-${revision}`} action={action} className="mt-4 space-y-4">
         <Toggle
@@ -227,7 +206,11 @@ function SplitSmsPanel({
     undefined,
   );
   const [testState, testAction, testPending] = useActionState(testSplitSmsAction, undefined);
-  useRefreshOnSuccess(saveState);
+  useAdminActionFeedback(saveState, savePending, { loadingMessage: "Saving SplitSMS settings…" });
+  useAdminActionFeedback(testState, testPending, {
+    loadingMessage: "Sending test SMS…",
+    refresh: false,
+  });
 
   return (
     <AdminWidget title="SplitSMS">
@@ -247,9 +230,6 @@ function SplitSmsPanel({
           Add your API key below to connect SplitSMS and view your balance.
         </AdminNotice>
       )}
-
-      <ActionFeedback state={saveState} />
-      <ActionFeedback state={testState} />
 
       <form key={`splitsms-${revision}`} action={saveAction} className="mt-4 space-y-4">
         <Toggle
@@ -355,21 +335,107 @@ function SplitSmsPanel({
   );
 }
 
-function SmtpPanel({ settings, revision }: { settings: AdminSettingsView; revision: string }) {
-  const [saveState, saveAction, savePending] = useActionState(saveSmtpSettingsAction, undefined);
+function EmailPanel({ settings, revision }: { settings: AdminSettingsView; revision: string }) {
+  const [smtpSaveState, smtpSaveAction, smtpSavePending] = useActionState(
+    saveSmtpSettingsAction,
+    undefined,
+  );
+  const [resendSaveState, resendSaveAction, resendSavePending] = useActionState(
+    saveResendSettingsAction,
+    undefined,
+  );
   const [testState, testAction, testPending] = useActionState(testSmtpAction, undefined);
-  useRefreshOnSuccess(saveState);
+  useAdminActionFeedback(smtpSaveState, smtpSavePending, {
+    loadingMessage: "Saving SMTP settings…",
+  });
+  useAdminActionFeedback(resendSaveState, resendSavePending, {
+    loadingMessage: "Saving Resend settings…",
+  });
+  useAdminActionFeedback(testState, testPending, {
+    loadingMessage: "Sending test email…",
+    refresh: false,
+  });
 
   return (
-    <AdminWidget title="SMTP email">
-      <p className="admin-field-hint mt-0">
-        Send booking confirmations and admin alerts by email.
-      </p>
+    <div className="space-y-4">
+      <AdminWidget title="Resend (recommended on Render)">
+        <p className="admin-field-hint mt-0">
+          Uses HTTPS instead of SMTP ports. Required on Render free web services, which block
+          outbound SMTP on ports 25, 465, and 587. Resend is tried first when enabled.
+        </p>
 
-      <ActionFeedback state={saveState} />
-      <ActionFeedback state={testState} />
+        <form key={`resend-${revision}`} action={resendSaveAction} className="mt-4 space-y-4">
+          <Toggle
+            id="resend-enabled"
+            name="enabled"
+            label="Enable Resend"
+            defaultChecked={settings.resend.enabled}
+          />
 
-      <form key={`smtp-${revision}`} action={saveAction} className="mt-4 space-y-4">
+          <div>
+            <label htmlFor="resend-api-key" className="admin-label">
+              API key
+            </label>
+            <input
+              id="resend-api-key"
+              name="apiKey"
+              type="password"
+              autoComplete="off"
+              placeholder={
+                settings.resend.hasApiKey
+                  ? "Saved — leave blank to keep current"
+                  : "re_xxxxxxxx"
+              }
+              className="admin-input max-w-md"
+            />
+            <p className="admin-field-hint">
+              Create a key at{" "}
+              <a href="https://resend.com/api-keys" target="_blank" className="text-[#2271b1]">
+                resend.com/api-keys
+              </a>
+              . Verify your sending domain in Resend before going live.
+            </p>
+          </div>
+
+          <div className="admin-form-grid-2">
+            <div>
+              <label htmlFor="resend-from-email" className="admin-label">
+                From email
+              </label>
+              <input
+                id="resend-from-email"
+                name="fromEmail"
+                type="email"
+                defaultValue={settings.resend.fromEmail}
+                placeholder="hello@travelzonegh.com"
+                className="admin-input"
+              />
+            </div>
+            <div>
+              <label htmlFor="resend-from-name" className="admin-label">
+                From name
+              </label>
+              <input
+                id="resend-from-name"
+                name="fromName"
+                type="text"
+                defaultValue={settings.resend.fromName}
+                className="admin-input"
+              />
+            </div>
+          </div>
+
+          <FormFooter pending={resendSavePending} label="Save Resend settings" />
+        </form>
+      </AdminWidget>
+
+      <AdminWidget title="SMTP (local or paid hosting)">
+        <p className="admin-field-hint mt-0">
+          Direct SMTP works on localhost and paid Render instances. On Render free tier, SMTP
+          connections time out — use Resend above instead.
+        </p>
+
+        <form key={`smtp-${revision}`} action={smtpSaveAction} className="mt-4 space-y-4">
         <Toggle
           id="smtp-enabled"
           name="enabled"
@@ -471,10 +537,10 @@ function SmtpPanel({ settings, revision }: { settings: AdminSettingsView; revisi
           </div>
         </div>
 
-        <FormFooter pending={savePending} label="Save SMTP settings" />
+        <FormFooter pending={smtpSavePending} label="Save SMTP settings" />
       </form>
 
-      <form key={`smtp-test-${revision}`} action={testAction} className="admin-settings-test-form">
+      <form key={`email-test-${revision}`} action={testAction} className="admin-settings-test-form">
         <div className="min-w-0 flex-1">
           <label htmlFor="smtp-test-email" className="admin-label">
             Send test email
@@ -485,18 +551,19 @@ function SmtpPanel({ settings, revision }: { settings: AdminSettingsView; revisi
             type="email"
             placeholder="you@example.com"
             className="admin-input"
-            disabled={!settings.status.smtpReady}
+            disabled={!settings.status.emailReady}
           />
         </div>
         <button
           type="submit"
-          disabled={testPending || !settings.status.smtpReady}
+          disabled={testPending || !settings.status.emailReady}
           className="admin-button-secondary shrink-0"
         >
           {testPending ? "Sending…" : "Send test"}
         </button>
       </form>
-    </AdminWidget>
+      </AdminWidget>
+    </div>
   );
 }
 
@@ -508,15 +575,13 @@ function NotificationsPanel({
   revision: string;
 }) {
   const [state, action, pending] = useActionState(saveNotificationSettingsAction, undefined);
-  useRefreshOnSuccess(state);
+  useAdminActionFeedback(state, pending, { loadingMessage: "Saving notification settings…" });
 
   return (
     <AdminWidget title="Notifications">
       <p className="admin-field-hint mt-0">
         Choose which alerts fire when bookings are paid or forms are submitted.
       </p>
-
-      <ActionFeedback state={state} />
 
       <form key={`notifications-${revision}`} action={action} className="mt-4 space-y-4">
         <SettingsGroup title="After successful payment">
@@ -677,12 +742,14 @@ export function SettingsForm({
         <div className="admin-tours-stat">
           <span
             className={`admin-tours-stat-value ${
-              settings.status.smtpReady ? "text-[#007017]" : "text-[#646970]"
+              settings.status.emailReady ? "text-[#007017]" : "text-[#646970]"
             }`}
           >
-            {settings.status.smtpReady ? "Ready" : "Setup"}
+            {settings.status.emailReady ? "Ready" : "Setup"}
           </span>
-          <span className="admin-tours-stat-label">SMTP</span>
+          <span className="admin-tours-stat-label">
+            Email{settings.status.resendReady ? " · Resend" : settings.status.smtpReady ? " · SMTP" : ""}
+          </span>
         </div>
       </div>
 
@@ -738,7 +805,7 @@ export function SettingsForm({
           ) : null}
 
           {tab === "smtp" ? (
-            <SmtpPanel settings={settings} revision={settings.revision} />
+            <EmailPanel settings={settings} revision={settings.revision} />
           ) : null}
 
           {tab === "notifications" ? (

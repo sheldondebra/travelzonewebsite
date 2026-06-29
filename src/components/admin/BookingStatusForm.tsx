@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import type { BookingStatus } from "@/lib/bookings";
 import { updateBookingStatusAction } from "@/app/admin/actions/bookings";
+import { useAdminAsyncAction } from "@/components/admin/AdminToastProvider";
 
 type Props = {
   bookingId: string;
@@ -11,22 +12,19 @@ type Props = {
 
 export function BookingStatusForm({ bookingId, currentStatus }: Props) {
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(
-    null,
-  );
+  const runAction = useAdminAsyncAction();
 
   return (
     <form
       action={(formData) => {
         startTransition(async () => {
-          const result = await updateBookingStatusAction(
-            bookingId,
-            formData.get("status") as BookingStatus,
-          );
-          setMessage(
-            result.success
-              ? { type: "success", text: result.message }
-              : { type: "error", text: result.error },
+          await runAction(
+            () =>
+              updateBookingStatusAction(
+                bookingId,
+                formData.get("status") as BookingStatus,
+              ),
+            { loadingMessage: "Updating booking…" },
           );
         });
       }}
@@ -52,17 +50,6 @@ export function BookingStatusForm({ bookingId, currentStatus }: Props) {
           {pending ? "Saving…" : "Update status"}
         </button>
       </div>
-      {message ? (
-        <p
-          className={`rounded-[3px] px-2 py-2 text-[13px] ${
-            message.type === "success"
-              ? "admin-notice admin-notice-success"
-              : "admin-notice admin-notice-error"
-          }`}
-        >
-          {message.text}
-        </p>
-      ) : null}
     </form>
   );
 }

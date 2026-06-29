@@ -1,6 +1,10 @@
-import nodemailer from "nodemailer";
+import {
+  deliverEmail,
+  formatEmailDeliveryError,
+  type SendEmailParams,
+} from "@/lib/email-delivery";
 import { getAdminNotificationEmails } from "@/lib/email-recipients";
-import { getSmtpConfig, getNotificationSettings } from "@/lib/site-settings";
+import { getEmailDeliveryConfig, getNotificationSettings } from "@/lib/site-settings";
 import {
   getModeLabel,
   getTimeSlotLabel,
@@ -14,43 +18,26 @@ import {
   type ContactSubject,
 } from "@/lib/contact-messages";
 
-type SendEmailParams = {
-  to: string | string[];
-  subject: string;
-  text: string;
-  html?: string;
-};
-
-export async function sendEmail({ to, subject, text, html }: SendEmailParams) {
-  const smtp = await getSmtpConfig();
-  if (!smtp) {
-    throw new Error("SMTP is not configured or disabled.");
+export async function sendEmail(params: SendEmailParams) {
+  const delivery = await getEmailDeliveryConfig();
+  if (!delivery) {
+    throw new Error(
+      "Email is not configured. Enable Resend or SMTP under Admin → Settings → Email.",
+    );
   }
 
-  const transporter = nodemailer.createTransport({
-    host: smtp.host,
-    port: smtp.port,
-    secure: smtp.secure,
-    auth:
-      smtp.user && smtp.password
-        ? { user: smtp.user, pass: smtp.password }
-        : undefined,
-  });
-
-  await transporter.sendMail({
-    from: `"${smtp.fromName}" <${smtp.fromEmail}>`,
-    to: Array.isArray(to) ? to.join(", ") : to,
-    subject,
-    text,
-    html: html ?? text.replace(/\n/g, "<br>"),
-  });
+  try {
+    await deliverEmail(delivery, params);
+  } catch (error) {
+    throw new Error(formatEmailDeliveryError(error));
+  }
 }
 
 export async function sendTestEmail(to: string) {
   await sendEmail({
     to,
-    subject: "Travel Zone Ghana — SMTP test",
-    text: "This is a test email from your Travel Zone Ghana admin settings. SMTP is working correctly.",
+    subject: "Travel Zone Ghana — email test",
+    text: "This is a test email from your Travel Zone Ghana admin settings. Email delivery is working correctly.",
   });
 }
 
@@ -184,7 +171,7 @@ Travel Zone Ghana
         text: customerText,
       });
     } catch {
-      // Customer email is best-effort when SMTP is configured.
+      // Customer email is best-effort when email delivery is configured.
     }
   }
 
@@ -238,7 +225,7 @@ Travel Zone Ghana
         text: customerText,
       });
     } catch {
-      // Customer email is best-effort when SMTP is configured.
+      // Customer email is best-effort when email delivery is configured.
     }
   }
 

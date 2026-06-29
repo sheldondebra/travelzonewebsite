@@ -14,12 +14,14 @@ function getAppUrl() {
   ).replace(/\/$/, "");
 }
 
+export type LoginActionState = { error?: string; success?: boolean };
+
 export async function loginAction(
-  _prev: { error?: string } | undefined,
+  _prev: LoginActionState | undefined,
   formData: FormData,
-) {
+): Promise<LoginActionState> {
   if (!isSupabaseConfigured()) {
-    redirect("/admin/setup");
+    return { error: "Admin is not configured yet." };
   }
 
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -43,15 +45,17 @@ export async function loginAction(
     return { error: "This account does not have dashboard access." };
   }
 
-  redirect("/admin");
+  return { success: true };
 }
 
+export type PasswordResetActionState = { error?: string; success?: string };
+
 export async function requestPasswordResetAction(
-  _prev: { error?: string; success?: string } | undefined,
+  _prev: PasswordResetActionState | undefined,
   formData: FormData,
-) {
+): Promise<PasswordResetActionState> {
   if (!isSupabaseConfigured()) {
-    redirect("/admin/setup");
+    return { error: "Admin is not configured yet." };
   }
 
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -79,12 +83,14 @@ export async function requestPasswordResetAction(
   };
 }
 
+export type UpdatePasswordActionState = { error?: string; success?: boolean };
+
 export async function updatePasswordAction(
-  _prev: { error?: string } | undefined,
+  _prev: UpdatePasswordActionState | undefined,
   formData: FormData,
-) {
+): Promise<UpdatePasswordActionState> {
   if (!isSupabaseConfigured()) {
-    redirect("/admin/setup");
+    return { error: "Admin is not configured yet." };
   }
 
   const password = String(formData.get("password") ?? "");
@@ -122,7 +128,7 @@ export async function updatePasswordAction(
   }
 
   await supabase.auth.signOut();
-  redirect("/admin/login?reset=success");
+  return { success: true };
 }
 
 export async function logoutAction() {

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import {
   deleteAboutTeamMember,
   saveAboutTeamMember,
+  seedDefaultAboutTeamMembersIfEmpty,
   updateAboutTeamMemberStatus,
 } from "@/lib/about-team-store";
 import type { ContentStatus } from "@/lib/content-types";
@@ -114,6 +115,30 @@ export async function deleteAboutTeamMemberFormAction(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Delete failed.",
+    };
+  }
+}
+
+export async function importDefaultAboutTeamMembersAction(
+  _prev: AboutTeamActionResult | undefined,
+  _formData: FormData,
+): Promise<AboutTeamActionResult> {
+  try {
+    await requireStaff();
+    const imported = await seedDefaultAboutTeamMembersIfEmpty();
+    revalidatePath("/admin/about");
+    revalidatePath("/about");
+    if (imported === 0) {
+      return { success: true, message: "Team members are already in the database." };
+    }
+    return {
+      success: true,
+      message: `Imported ${imported} team member${imported === 1 ? "" : "s"} from the About page.`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Could not import team members.",
     };
   }
 }

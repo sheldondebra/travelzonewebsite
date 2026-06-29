@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
-import { createStaffAction, type UsersActionResult } from "@/app/admin/actions/users";
-import { AdminNotice, AdminWidget } from "@/components/admin/AdminChrome";
+import { useActionState, useState } from "react";
+import { createStaffAction } from "@/app/admin/actions/users";
+import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
+import { AdminWidget } from "@/components/admin/AdminChrome";
 import { RoleCapabilities } from "@/components/admin/UsersList";
 import type { StaffRole } from "@/lib/supabase/auth";
 import { getStaffRoleLabel, STAFF_ROLE_OPTIONS } from "@/lib/staff-roles";
@@ -15,30 +15,18 @@ type Props = {
   showCancel?: boolean;
 };
 
-function FormMessage({ result }: { result: UsersActionResult | undefined }) {
-  if (!result) return null;
-  return (
-    <AdminNotice variant={result.success ? "success" : "error"}>
-      {result.success ? result.message : result.error}
-    </AdminNotice>
-  );
-}
-
 export function StaffUserForm({
   defaultEmail = "",
   variant = "full",
   showCancel = true,
 }: Props) {
-  const router = useRouter();
   const [role, setRole] = useState<StaffRole>("editor");
   const [sendInvite, setSendInvite] = useState(variant === "compact");
   const [state, formAction, pending] = useActionState(createStaffAction, undefined);
 
-  useEffect(() => {
-    if (state?.success) {
-      router.refresh();
-    }
-  }, [router, state]);
+  useAdminActionFeedback(state, pending, {
+    loadingMessage: sendInvite ? "Sending invitation…" : "Adding user…",
+  });
 
   const submitLabel = pending
     ? "Adding…"
@@ -48,8 +36,6 @@ export function StaffUserForm({
 
   const formFields = (
     <>
-      <FormMessage result={state} />
-
       <div className={variant === "compact" ? "admin-form-grid-2" : "space-y-4"}>
         <div className={variant === "compact" ? "sm:col-span-2" : undefined}>
           <label htmlFor="staff-email" className="admin-label">

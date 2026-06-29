@@ -12,6 +12,12 @@ import { getSupabaseEnv, isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingTableError } from "@/lib/supabase/db-errors";
 
+const DEFAULT_ABOUT_TEAM_MEMBER_IDS = [
+  "a1111111-1111-4111-8111-111111111101",
+  "a1111111-1111-4111-8111-111111111102",
+  "a1111111-1111-4111-8111-111111111103",
+] as const;
+
 function databaseSetupError() {
   return new Error(
     "About team table is missing. Run supabase/migrations/20260628140000_about_team_members.sql in the Supabase SQL Editor.",
@@ -88,6 +94,39 @@ export async function listAdminAboutTeamMembers(): Promise<AdminAboutTeamMember[
   }
 
   return (data ?? []).map((row) => rowToMember(row));
+}
+
+/** Import the default About page team into the database when empty. */
+export async function seedDefaultAboutTeamMembersIfEmpty(): Promise<number> {
+  const supabase = await createClient();
+  const { count, error: countError } = await supabase
+    .from("about_team_members")
+    .select("*", { count: "exact", head: true });
+
+  if (countError) {
+    if (isMissingTableError(countError)) throw databaseSetupError();
+    throw new Error(countError.message);
+  }
+
+  if ((count ?? 0) > 0) return 0;
+
+  const rows = fallbackTeamMembers.map((member, index) => ({
+    id: DEFAULT_ABOUT_TEAM_MEMBER_IDS[index] ?? undefined,
+    name: member.name,
+    role: member.role,
+    bio: member.bio,
+    image: member.image,
+    sort_order: index + 1,
+    status: "published" as const,
+  }));
+
+  const { error } = await supabase.from("about_team_members").upsert(rows, { onConflict: "id" });
+  if (error) {
+    if (isMissingTableError(error)) throw databaseSetupError();
+    throw new Error(error.message);
+  }
+
+  return rows.length;
 }
 
 export async function getAdminAboutTeamMember(id: string): Promise<AdminAboutTeamMember | null> {

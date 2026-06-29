@@ -2,15 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useActionState } from "react";
 import {
   deleteTourFormAction,
   updateTourStatusAction,
-  type TourActionResult,
 } from "@/app/admin/actions/tours";
-import { AdminNotice } from "@/components/admin/AdminChrome";
+import {
+  useAdminActionFeedback,
+} from "@/components/admin/AdminToastProvider";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import type { AdminTour } from "@/lib/content-types";
 import type { StaffRole } from "@/lib/supabase/auth";
@@ -44,15 +44,7 @@ function TourThumbnail({ tour }: { tour: AdminTour }) {
   );
 }
 
-function TourRow({
-  tour,
-  role,
-  onActionResult,
-}: {
-  tour: AdminTour;
-  role: StaffRole;
-  onActionResult: (result: TourActionResult) => void;
-}) {
+function TourRow({ tour, role }: { tour: AdminTour; role: StaffRole }) {
   const [statusState, statusAction, statusPending] = useActionState(
     updateTourStatusAction,
     undefined,
@@ -62,13 +54,12 @@ function TourRow({
     undefined,
   );
 
-  useEffect(() => {
-    if (statusState) onActionResult(statusState);
-  }, [statusState, onActionResult]);
-
-  useEffect(() => {
-    if (deleteState) onActionResult(deleteState);
-  }, [deleteState, onActionResult]);
+  useAdminActionFeedback(statusState, statusPending, {
+    loadingMessage: "Updating tour…",
+  });
+  useAdminActionFeedback(deleteState, deletePending, {
+    loadingMessage: "Deleting tour…",
+  });
 
   const nextStatus = tour.status === "published" ? "draft" : "published";
   const statusLabel = tour.status === "published" ? "Unpublish" : "Publish";
@@ -160,10 +151,8 @@ function TourRow({
 }
 
 export function ToursList({ tours, role }: Props) {
-  const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
-  const [feedback, setFeedback] = useState<TourActionResult | null>(null);
 
   const published = tours.filter((tour) => tour.status === "published").length;
   const drafts = tours.filter((tour) => tour.status === "draft").length;
@@ -183,34 +172,8 @@ export function ToursList({ tours, role }: Props) {
     });
   }, [filter, search, tours]);
 
-  const handleActionResult = useMemo(
-    () => (result: TourActionResult) => {
-      setFeedback(result);
-      if (result.success) {
-        router.refresh();
-      }
-    },
-    [router],
-  );
-
   return (
     <>
-      {feedback ? (
-        <AdminNotice variant={feedback.success ? "success" : "error"}>
-          <div className="flex items-start justify-between gap-3">
-            <span>{feedback.success ? feedback.message : feedback.error}</span>
-            <button
-              type="button"
-              className="admin-row-action-link shrink-0"
-              onClick={() => setFeedback(null)}
-              aria-label="Dismiss message"
-            >
-              Dismiss
-            </button>
-          </div>
-        </AdminNotice>
-      ) : null}
-
       <div className="admin-tours-stats">
         <div className="admin-tours-stat">
           <span className="admin-tours-stat-value">{tours.length}</span>
@@ -298,14 +261,7 @@ export function ToursList({ tours, role }: Props) {
                   </td>
                 </tr>
               ) : (
-                filtered.map((tour) => (
-                  <TourRow
-                    key={tour.id}
-                    tour={tour}
-                    role={role}
-                    onActionResult={handleActionResult}
-                  />
-                ))
+                filtered.map((tour) => <TourRow key={tour.id} tour={tour} role={role} />)
               )}
             </tbody>
           </table>

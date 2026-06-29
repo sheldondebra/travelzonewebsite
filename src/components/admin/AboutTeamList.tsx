@@ -2,15 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useActionState } from "react";
 import {
   deleteAboutTeamMemberFormAction,
   updateAboutTeamMemberStatusAction,
-  type AboutTeamActionResult,
 } from "@/app/admin/actions/about-team";
-import { AdminNotice } from "@/components/admin/AdminChrome";
+import { ImportDefaultTeamButton } from "@/components/admin/ImportDefaultTeamButton";
+import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import type { AdminAboutTeamMember } from "@/lib/about-team";
 import type { StaffRole } from "@/lib/supabase/auth";
@@ -22,15 +21,12 @@ type Props = {
   role: StaffRole;
 };
 
-function MemberRow({
-  member,
-  role,
-  onActionResult,
-}: {
-  member: AdminAboutTeamMember;
-  role: StaffRole;
-  onActionResult: (result: AboutTeamActionResult) => void;
-}) {
+function filterCount(members: AdminAboutTeamMember[], filter: Filter) {
+  if (filter === "all") return members.length;
+  return members.filter((member) => member.status === filter).length;
+}
+
+function MemberRow({ member, role }: { member: AdminAboutTeamMember; role: StaffRole }) {
   const [statusState, statusAction, statusPending] = useActionState(
     updateAboutTeamMemberStatusAction,
     undefined,
@@ -40,13 +36,12 @@ function MemberRow({
     undefined,
   );
 
-  useEffect(() => {
-    if (statusState) onActionResult(statusState);
-  }, [statusState, onActionResult]);
-
-  useEffect(() => {
-    if (deleteState) onActionResult(deleteState);
-  }, [deleteState, onActionResult]);
+  useAdminActionFeedback(statusState, statusPending, {
+    loadingMessage: "Updating team member…",
+  });
+  useAdminActionFeedback(deleteState, deletePending, {
+    loadingMessage: "Deleting team member…",
+  });
 
   const nextStatus = member.status === "published" ? "draft" : "published";
   const statusLabel = member.status === "published" ? "Unpublish" : "Publish";
@@ -54,7 +49,11 @@ function MemberRow({
   return (
     <tr>
       <td className="w-14">
-        <Link href={`/admin/about/${member.id}/edit`} className="block overflow-hidden rounded-[3px]">
+        <Link
+          href={`/admin/about/${member.id}/edit`}
+          className="admin-tour-thumb"
+          aria-label={`Edit ${member.name}`}
+        >
           {member.image ? (
             <Image
               src={member.image}
@@ -71,22 +70,24 @@ function MemberRow({
           )}
         </Link>
       </td>
-      <td>
-        <Link href={`/admin/about/${member.id}/edit`} className="font-semibold text-[#2271b1]">
+      <td className="min-w-[180px]">
+        <Link href={`/admin/about/${member.id}/edit`} className="admin-row-title">
           {member.name}
         </Link>
-        <p className="mt-0.5 text-[12px] text-[#646970]">{member.role}</p>
+        <div className="text-[12px] font-medium text-[#646970]">{member.role}</div>
+        {member.bio ? (
+          <p className="mt-1 line-clamp-2 text-[12px] text-[#646970]">{member.bio}</p>
+        ) : null}
       </td>
       <td>
         <StatusBadge status={member.status} />
       </td>
-      <td className="text-[#646970]">{member.sortOrder}</td>
-      <td className="text-right">
-        <div className="flex flex-wrap justify-end gap-2">
-          <Link href={`/admin/about/${member.id}/edit`} className="admin-row-action-link">
-            Edit
-          </Link>
-          <form action={statusAction}>
+      <td className="hidden text-[#646970] md:table-cell">{member.sortOrder}</td>
+      <td className="hidden lg:table-cell">
+        <div className="admin-row-actions">
+          <Link href={`/admin/about/${member.id}/edit`}>Edit</Link>
+          <span aria-hidden>|</span>
+          <form action={statusAction} className="inline">
             <input type="hidden" name="id" value={member.id} />
             <input type="hidden" name="status" value={nextStatus} />
             <button type="submit" disabled={statusPending} className="admin-row-action-link">
@@ -94,25 +95,31 @@ function MemberRow({
             </button>
           </form>
           {role === "admin" ? (
-            <form
-              action={deleteAction}
-              onSubmit={(event) => {
-                if (
-                  !window.confirm(`Delete ${member.name} from the About page? This cannot be undone.`)
-                ) {
-                  event.preventDefault();
-                }
-              }}
-            >
-              <input type="hidden" name="id" value={member.id} />
-              <button
-                type="submit"
-                disabled={deletePending}
-                className="admin-row-action-delete"
+            <>
+              <span aria-hidden>|</span>
+              <form
+                action={deleteAction}
+                className="inline"
+                onSubmit={(event) => {
+                  if (
+                    !window.confirm(
+                      `Delete ${member.name} from the About page? This cannot be undone.`,
+                    )
+                  ) {
+                    event.preventDefault();
+                  }
+                }}
               >
-                {deletePending ? "…" : "Delete"}
-              </button>
-            </form>
+                <input type="hidden" name="id" value={member.id} />
+                <button
+                  type="submit"
+                  disabled={deletePending}
+                  className="admin-row-action-delete inline"
+                >
+                  {deletePending ? "…" : "Delete"}
+                </button>
+              </form>
+            </>
           ) : null}
         </div>
       </td>
@@ -121,75 +128,94 @@ function MemberRow({
 }
 
 export function AboutTeamList({ members, role }: Props) {
-  const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
-  const [notice, setNotice] = useState<AboutTeamActionResult | null>(null);
 
   const filtered = useMemo(() => {
     if (filter === "all") return members;
     return members.filter((member) => member.status === filter);
   }, [filter, members]);
 
-  useEffect(() => {
-    if (notice?.success) router.refresh();
-  }, [notice, router]);
+  const published = members.filter((member) => member.status === "published").length;
+  const drafts = members.filter((member) => member.status === "draft").length;
 
   return (
-    <div>
-      {notice ? (
-        <div className="mb-4">
-          <AdminNotice variant={notice.success ? "success" : "error"}>
-            {notice.success ? notice.message : notice.error}
-          </AdminNotice>
+    <>
+      <div className="admin-about-top">
+        <div className="admin-about-stats">
+          <div className="admin-about-stat">
+            <span className="admin-about-stat-value">{members.length}</span>
+            <span className="admin-about-stat-label">Total</span>
+          </div>
+          <div className="admin-about-stat">
+            <span className="admin-about-stat-value">{published}</span>
+            <span className="admin-about-stat-label">Published</span>
+          </div>
+          <div className="admin-about-stat">
+            <span className="admin-about-stat-value">{drafts}</span>
+            <span className="admin-about-stat-label">Draft</span>
+          </div>
         </div>
-      ) : null}
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {(["all", "published", "draft"] as const).map((value) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setFilter(value)}
-            className={`rounded-[3px] px-3 py-1.5 text-[13px] ${
-              filter === value
-                ? "bg-[#2271b1] text-white"
-                : "bg-white text-[#1d2327] ring-1 ring-[#c3c4c7]"
-            }`}
-          >
-            {value === "all" ? "All" : value === "published" ? "Published" : "Draft"}
-          </button>
-        ))}
+        <div className="admin-about-toolbar">
+          <ul className="admin-subsubsub">
+            {(["all", "published", "draft"] as const).map((value) => (
+              <li key={value}>
+                <button
+                  type="button"
+                  className={filter === value ? "current" : ""}
+                  onClick={() => setFilter(value)}
+                >
+                  {value === "all"
+                    ? "All"
+                    : value === "published"
+                      ? "Published"
+                      : "Draft"}{" "}
+                  ({filterCount(members, value)})
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <p className="rounded-[3px] border border-[#c3c4c7] bg-white px-4 py-8 text-center text-[13px] text-[#646970]">
-          No team members yet. Add the people shown on your About page.
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="admin-list-table">
+      <div className="admin-postbox overflow-hidden p-0">
+        <div className="admin-table-scroll">
+          <table className="admin-list-table admin-about-table">
             <thead>
               <tr>
-                <th aria-label="Photo" />
-                <th>Name</th>
+                <th className="w-14" aria-label="Photo" />
+                <th>Team member</th>
                 <th>Status</th>
-                <th>Order</th>
-                <th className="text-right">Actions</th>
+                <th className="hidden md:table-cell">Order</th>
+                <th className="hidden lg:table-cell">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((member) => (
-                <MemberRow
-                  key={member.id}
-                  member={member}
-                  role={role}
-                  onActionResult={setNotice}
-                />
-              ))}
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-10 text-center text-[#646970]">
+                    {members.length === 0 ? (
+                      <div className="space-y-4">
+                        <p>
+                          No team members in the database yet. Import the people currently shown
+                          on your About page to start editing them here.
+                        </p>
+                        <ImportDefaultTeamButton />
+                      </div>
+                    ) : (
+                      "No team members match this filter."
+                    )}
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((member) => (
+                  <MemberRow key={member.id} member={member} role={role} />
+                ))
+              )}
             </tbody>
           </table>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }

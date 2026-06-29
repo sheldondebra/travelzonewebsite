@@ -1,14 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useActionState, useEffect } from "react";
+import { useActionState, useState } from "react";
 import {
   saveConsultationAvailabilityAction,
   type ConsultationAvailabilityResult,
 } from "@/app/admin/actions/consultations";
-import { AdminNotice } from "@/components/admin/AdminChrome";
-import type { ConsultationAvailabilitySettings } from "@/lib/settings-types";
+import { AdminBlockedDatesPicker } from "@/components/admin/AdminBlockedDatesPicker";
+import { AdminTimeSlotPicker } from "@/components/admin/AdminTimeSlotPicker";
+import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
 import { getOpenDaysSummary } from "@/lib/consultation-availability";
+import type { ConsultationAvailabilitySettings } from "@/lib/settings-types";
 
 type Props = {
   availability: ConsultationAvailabilitySettings;
@@ -16,41 +17,58 @@ type Props = {
 };
 
 const DAY_OPTIONS = [
-  { value: 0, label: "Sunday" },
-  { value: 1, label: "Monday" },
-  { value: 2, label: "Tuesday" },
-  { value: 3, label: "Wednesday" },
-  { value: 4, label: "Thursday" },
-  { value: 5, label: "Friday" },
-  { value: 6, label: "Saturday" },
+  { value: 0, label: "Sun" },
+  { value: 1, label: "Mon" },
+  { value: 2, label: "Tue" },
+  { value: 3, label: "Wed" },
+  { value: 4, label: "Thu" },
+  { value: 5, label: "Fri" },
+  { value: 6, label: "Sat" },
 ];
 
-function slotsToText(slots: ConsultationAvailabilitySettings["weekdaySlots"]) {
-  return slots.map((slot) => slot.value).join("\n");
+const WEEKDAY_QUICK_PICKS = ["09:00", "10:30", "12:00", "14:00", "15:30", "17:00"];
+const SATURDAY_QUICK_PICKS = ["09:00", "10:30", "12:00", "14:00"];
+
+const NOTICE_OPTIONS = [
+  { value: 15, label: "15 minutes" },
+  { value: 30, label: "30 minutes" },
+  { value: 60, label: "1 hour" },
+  { value: 120, label: "2 hours" },
+  { value: 240, label: "4 hours" },
+];
+
+const ADVANCE_OPTIONS = [
+  { value: 7, label: "1 week ahead" },
+  { value: 14, label: "2 weeks ahead" },
+  { value: 21, label: "3 weeks ahead" },
+  { value: 30, label: "1 month ahead" },
+  { value: 60, label: "2 months ahead" },
+  { value: 90, label: "3 months ahead" },
+];
+
+function slotsToValues(slots: ConsultationAvailabilitySettings["weekdaySlots"]) {
+  return slots.map((slot) => slot.value);
 }
 
 export function ConsultationAvailabilityForm({ availability, canEdit }: Props) {
-  const router = useRouter();
+  const [weekdaySlots, setWeekdaySlots] = useState(slotsToValues(availability.weekdaySlots));
+  const [saturdaySlots, setSaturdaySlots] = useState(slotsToValues(availability.saturdaySlots));
+  const [blockedDates, setBlockedDates] = useState(availability.blockedDates);
+
   const [state, formAction, pending] = useActionState<
     ConsultationAvailabilityResult | undefined,
     FormData
   >(saveConsultationAvailabilityAction, undefined);
 
-  useEffect(() => {
-    if (state?.success) {
-      router.refresh();
-    }
-  }, [router, state]);
+  useAdminActionFeedback(state, pending, {
+    loadingMessage: "Saving booking schedule…",
+  });
+
+  const disabled = !canEdit || pending;
 
   return (
-    <form action={formAction} className="space-y-5">
-      {state ? (
-        <AdminNotice variant={state.success ? "success" : "error"}>
-          {state.success ? state.message : state.error}
-        </AdminNotice>
-      ) : null}
-
-      <p className="text-[13px] text-[#646970]">
+    <form action={formAction} className="admin-schedule-form">
+      <p className="admin-schedule-intro">
         Controls when customers can book free consultations on{" "}
         <a href="/consultation" target="_blank" className="text-[#2271b1] underline">
           /consultation
@@ -58,102 +76,94 @@ export function ConsultationAvailabilityForm({ availability, canEdit }: Props) {
         . Current schedule: {getOpenDaysSummary(availability)}
       </p>
 
-      <fieldset className="space-y-2" disabled={!canEdit || pending}>
+      <input type="hidden" name="weekdaySlots" value={weekdaySlots.join("\n")} />
+      <input type="hidden" name="saturdaySlots" value={saturdaySlots.join("\n")} />
+      <input type="hidden" name="blockedDates" value={blockedDates.join("\n")} />
+
+      <fieldset className="admin-schedule-field" disabled={disabled}>
         <legend className="admin-label mb-2">Open days</legend>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="admin-day-pills">
           {DAY_OPTIONS.map((day) => (
-            <label key={day.value} className="flex items-center gap-2 text-[13px] text-[#1d2327]">
+            <label key={day.value} className="admin-day-pill">
               <input
                 type="checkbox"
                 name={`openDay_${day.value}`}
                 defaultChecked={availability.openDays.includes(day.value)}
-                className="rounded border-[#8c8f94]"
+                className="sr-only"
               />
-              {day.label}
+              <span>{day.label}</span>
             </label>
           ))}
         </div>
       </fieldset>
 
-      <div>
-        <label htmlFor="weekdaySlots" className="admin-label">
-          Weekday time slots
-        </label>
-        <p className="mb-2 text-[12px] text-[#646970]">
-          One time per line in 24-hour format (e.g. 09:00, 14:30).
-        </p>
-        <textarea
-          id="weekdaySlots"
-          name="weekdaySlots"
-          rows={5}
-          defaultValue={slotsToText(availability.weekdaySlots)}
-          disabled={!canEdit || pending}
-          className="admin-input font-mono text-[13px]"
+      <div className="admin-schedule-grid">
+        <AdminTimeSlotPicker
+          id="weekday"
+          label="Weekday time slots"
+          hint="Mon–Fri appointment times shown to customers."
+          values={weekdaySlots}
+          onChange={setWeekdaySlots}
+          disabled={disabled}
+          quickPicks={WEEKDAY_QUICK_PICKS}
         />
-      </div>
 
-      <div>
-        <label htmlFor="saturdaySlots" className="admin-label">
-          Saturday time slots
-        </label>
-        <textarea
-          id="saturdaySlots"
-          name="saturdaySlots"
-          rows={4}
-          defaultValue={slotsToText(availability.saturdaySlots)}
-          disabled={!canEdit || pending}
-          className="admin-input font-mono text-[13px]"
+        <AdminTimeSlotPicker
+          id="saturday"
+          label="Saturday time slots"
+          hint="Separate schedule for Saturdays."
+          values={saturdaySlots}
+          onChange={setSaturdaySlots}
+          disabled={disabled}
+          quickPicks={SATURDAY_QUICK_PICKS}
         />
-      </div>
 
-      <div>
-        <label htmlFor="blockedDates" className="admin-label">
-          Blocked dates
-        </label>
-        <p className="mb-2 text-[12px] text-[#646970]">
-          Optional. One YYYY-MM-DD date per line (holidays, closures).
-        </p>
-        <textarea
-          id="blockedDates"
-          name="blockedDates"
-          rows={3}
-          defaultValue={availability.blockedDates.join("\n")}
-          disabled={!canEdit || pending}
-          className="admin-input font-mono text-[13px]"
-          placeholder={"2026-12-25\n2026-12-26"}
+        <AdminBlockedDatesPicker
+          id="blocked"
+          label="Blocked dates"
+          hint="Holidays and closures when consultations cannot be booked."
+          values={blockedDates}
+          onChange={setBlockedDates}
+          disabled={disabled}
         />
-      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="minNoticeMinutes" className="admin-label">
-            Minimum notice (minutes)
-          </label>
-          <input
-            id="minNoticeMinutes"
-            name="minNoticeMinutes"
-            type="number"
-            min={0}
-            step={15}
-            defaultValue={availability.minNoticeMinutes}
-            disabled={!canEdit || pending}
-            className="admin-input"
-          />
-        </div>
-        <div>
-          <label htmlFor="maxAdvanceDays" className="admin-label">
-            Book up to (days ahead)
-          </label>
-          <input
-            id="maxAdvanceDays"
-            name="maxAdvanceDays"
-            type="number"
-            min={1}
-            max={90}
-            defaultValue={availability.maxAdvanceDays}
-            disabled={!canEdit || pending}
-            className="admin-input"
-          />
+        <div className="admin-schedule-rules">
+          <div>
+            <label htmlFor="minNoticeMinutes" className="admin-label">
+              Minimum notice
+            </label>
+            <select
+              id="minNoticeMinutes"
+              name="minNoticeMinutes"
+              defaultValue={String(availability.minNoticeMinutes)}
+              disabled={disabled}
+              className="admin-input"
+            >
+              {NOTICE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="maxAdvanceDays" className="admin-label">
+              Book up to
+            </label>
+            <select
+              id="maxAdvanceDays"
+              name="maxAdvanceDays"
+              defaultValue={String(availability.maxAdvanceDays)}
+              disabled={disabled}
+              className="admin-input"
+            >
+              {ADVANCE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

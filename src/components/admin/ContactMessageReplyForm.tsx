@@ -1,12 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
-import {
-  replyContactMessageAction,
-  type MessageReplyResult,
-} from "@/app/admin/actions/messages";
+import { replyContactMessageAction } from "@/app/admin/actions/messages";
 import { AdminNotice } from "@/components/admin/AdminChrome";
+import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
 
 type Props = {
   messageId: string;
@@ -25,23 +22,25 @@ export function ContactMessageReplyForm({
   emailReady,
   smsReady,
 }: Props) {
-  const router = useRouter();
   const [reply, setReply] = useState("");
   const [state, formAction, pending] = useActionState(replyContactMessageAction, undefined);
+
+  useAdminActionFeedback(state, pending, {
+    loadingMessage: "Sending reply…",
+  });
 
   useEffect(() => {
     if (state?.success) {
       setReply("");
-      router.refresh();
     }
-  }, [router, state]);
+  }, [state]);
 
   if (!emailReady && !smsReady) {
     return (
       <AdminNotice variant="warning">
-        Configure SMTP and SplitSMS under{" "}
+        Configure Resend or SMTP under{" "}
         <a href="/admin/settings?tab=smtp" className="text-[#2271b1] underline">
-          Settings
+          Settings → Email
         </a>{" "}
         to reply from the dashboard.
       </AdminNotice>
@@ -51,12 +50,6 @@ export function ContactMessageReplyForm({
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="messageId" value={messageId} />
-
-      {state ? (
-        <AdminNotice variant={state.success ? "success" : "error"}>
-          {state.success ? state.message : state.error}
-        </AdminNotice>
-      ) : null}
 
       <div>
         <label htmlFor="reply-body" className="admin-label">

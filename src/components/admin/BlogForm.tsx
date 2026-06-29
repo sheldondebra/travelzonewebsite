@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { saveBlogPostAction } from "@/app/admin/actions/blog";
-import { AdminNotice, AdminWidget } from "@/components/admin/AdminChrome";
+import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
+import { AdminWidget } from "@/components/admin/AdminChrome";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -34,6 +35,11 @@ export function BlogForm({ post }: Props) {
   const baselineDate = useMemo(() => defaultDisplayDate(), []);
   const [state, formAction, pending] = useActionState(saveBlogPostAction, undefined);
 
+  useAdminActionFeedback(state, pending, {
+    loadingMessage: isNew ? "Creating post…" : "Saving post…",
+    refresh: false,
+  });
+
   const [title, setTitle] = useState(post?.title ?? "");
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
   const [bodyHtml, setBodyHtml] = useState(
@@ -61,10 +67,6 @@ export function BlogForm({ post }: Props) {
       <input type="hidden" name="image" value={image} />
 
       <div className="admin-editor-main space-y-4">
-        {state && !state.success ? (
-          <AdminNotice variant="error">{state.error}</AdminNotice>
-        ) : null}
-
         <AdminWidget title="Basics">
           <div className="space-y-4">
             <div>

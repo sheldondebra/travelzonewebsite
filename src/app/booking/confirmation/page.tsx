@@ -9,7 +9,7 @@ import {
 } from "@/lib/booking-access";
 import { contactInfo } from "@/lib/content";
 import { createMetadata } from "@/lib/seo";
-import { getSiteSettings } from "@/lib/site-settings";
+import { getEmailDeliveryConfig, getSiteSettings } from "@/lib/site-settings";
 
 type Props = {
   searchParams: Promise<{ reference?: string; ref?: string; paid?: string }>;
@@ -21,14 +21,13 @@ export default async function BookingConfirmationPage({ searchParams }: Props) {
   const canViewDetails = canViewBookingDetails(booking, reference);
   const isPaid = paid === "1" || booking?.paymentStatus === "paid";
   const settings = await getSiteSettings();
+  const emailDelivery = await getEmailDeliveryConfig();
   const smsReady =
     settings.splitsms.enabled &&
     Boolean(settings.splitsms.apiKey.trim()) &&
     settings.notifications.smsCustomerOnBookingPaid;
   const emailReady =
-    settings.smtp.enabled &&
-    Boolean(settings.smtp.host.trim()) &&
-    settings.notifications.emailCustomerOnBookingPaid;
+    Boolean(emailDelivery) && settings.notifications.emailCustomerOnBookingPaid;
 
   const confirmationNote = isPaid
     ? smsReady && emailReady

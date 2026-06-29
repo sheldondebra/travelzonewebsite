@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 import { saveTourAction } from "@/app/admin/actions/tours";
-import { AdminNotice, AdminWidget } from "@/components/admin/AdminChrome";
+import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
+import { AdminWidget } from "@/components/admin/AdminChrome";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { MediaLibrary } from "@/components/admin/MediaLibrary";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -43,6 +44,11 @@ function hasExtrasContent(
 export function TourForm({ tour }: Props) {
   const isNew = !tour;
   const [state, formAction, pending] = useActionState(saveTourAction, undefined);
+
+  useAdminActionFeedback(state, pending, {
+    loadingMessage: isNew ? "Creating tour…" : "Saving tour…",
+    refresh: false,
+  });
 
   const [title, setTitle] = useState(tour?.title ?? "");
   const [tagline, setTagline] = useState(tour?.tagline ?? "");
@@ -124,10 +130,6 @@ export function TourForm({ tour }: Props) {
       />
 
       <div className="admin-editor-main space-y-4">
-        {state && !state.success ? (
-          <AdminNotice variant="error">{state.error}</AdminNotice>
-        ) : null}
-
         <AdminWidget title="Basics">
           <div className="space-y-4">
             <div>

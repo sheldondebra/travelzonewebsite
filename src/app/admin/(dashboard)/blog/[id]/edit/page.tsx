@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AdminNotice, AdminPageHeader } from "@/components/admin/AdminChrome";
+import { AdminPageHeader } from "@/components/admin/AdminChrome";
+import { AdminSavedQueryToast } from "@/components/admin/AdminSavedQueryToast";
 import { BlogForm } from "@/components/admin/BlogForm";
 import { DeleteBlogButton } from "@/components/admin/DeleteBlogButton";
 import { getAdminBlogPost } from "@/lib/content-admin";
@@ -14,12 +15,13 @@ type Props = {
 export default async function EditBlogPage({ params, searchParams }: Props) {
   const { role } = await requireStaff();
   const { id } = await params;
-  const { saved } = await searchParams;
+  await searchParams;
   const post = await getAdminBlogPost(id);
   if (!post) notFound();
 
   return (
     <>
+      <AdminSavedQueryToast message="Post updated." />
       <AdminPageHeader
         title="Edit post"
         description={post.title}
@@ -40,8 +42,6 @@ export default async function EditBlogPage({ params, searchParams }: Props) {
           </div>
         }
       />
-
-      {saved ? <AdminNotice variant="success">Post updated.</AdminNotice> : null}
 
       <BlogForm post={post} />
 

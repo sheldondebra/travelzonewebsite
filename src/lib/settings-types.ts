@@ -23,6 +23,13 @@ export type SmtpSettings = {
   fromName: string;
 };
 
+export type ResendSettings = {
+  enabled: boolean;
+  apiKey: string;
+  fromEmail: string;
+  fromName: string;
+};
+
 export type ConsultationTimeSlotOption = {
   value: string;
   label: string;
@@ -56,6 +63,7 @@ export type SiteSettings = {
   paystack: PaystackSettings;
   splitsms: SplitSmsSettings;
   smtp: SmtpSettings;
+  resend: ResendSettings;
   notifications: NotificationSettings;
   consultationAvailability: ConsultationAvailabilitySettings;
 };
@@ -64,11 +72,14 @@ export type AdminSettingsView = {
   paystack: PaystackSettings & { hasSecretKey: boolean };
   splitsms: SplitSmsSettings & { hasApiKey: boolean };
   smtp: SmtpSettings & { hasPassword: boolean };
+  resend: ResendSettings & { hasApiKey: boolean };
   notifications: NotificationSettings;
   status: {
     paystackReady: boolean;
     splitsmsReady: boolean;
     smtpReady: boolean;
+    resendReady: boolean;
+    emailReady: boolean;
   };
   revision: string;
 };

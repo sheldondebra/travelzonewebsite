@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 import { deleteBlogPostFormAction } from "@/app/admin/actions/blog";
+import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
 
 type Props = {
   id: string;
@@ -21,10 +22,14 @@ export function DeleteBlogButton({
     undefined,
   );
 
+  useAdminActionFeedback(state, pending, {
+    loadingMessage: "Deleting post…",
+    refresh: !redirectOnDelete,
+  });
+
   useEffect(() => {
     if (redirectOnDelete && state?.success) {
       router.push("/admin/blog");
-      router.refresh();
     }
   }, [redirectOnDelete, router, state]);
 

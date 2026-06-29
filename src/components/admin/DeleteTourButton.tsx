@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 import { deleteTourFormAction } from "@/app/admin/actions/tours";
+import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
 
 type Props = {
   id: string;
@@ -21,10 +22,14 @@ export function DeleteTourButton({
     undefined,
   );
 
+  useAdminActionFeedback(state, pending, {
+    loadingMessage: "Deleting tour…",
+    refresh: !redirectOnDelete,
+  });
+
   useEffect(() => {
     if (redirectOnDelete && state?.success) {
       router.push("/admin/tours");
-      router.refresh();
     }
   }, [redirectOnDelete, router, state]);
 

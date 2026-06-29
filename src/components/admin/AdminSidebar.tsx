@@ -2,27 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ComponentType } from "react";
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { IconType } from "react-icons";
 import {
-  BookingsIcon,
-  ConsultationsIcon,
-  ContactMessagesIcon,
-  DashboardIcon,
-  NewsletterIcon,
-  PostsIcon,
-  SettingsIcon,
-  ToursIcon,
-  UsersIcon,
-  AboutIcon,
-} from "@/components/admin/AdminSidebarIcons";
+  HiCalendarDays,
+  HiChatBubbleLeftRight,
+  HiCog6Tooth,
+  HiEnvelope,
+  HiEnvelopeOpen,
+  HiMapPin,
+  HiNewspaper,
+  HiSquares2X2,
+  HiUserGroup,
+  HiUsers,
+} from "react-icons/hi2";
+import type { StaffRole } from "@/lib/supabase/auth";
 
 type MenuItem = {
   href: string;
   label: string;
   exact?: boolean;
   adminOnly?: boolean;
-  icon: ComponentType<{ className?: string }>;
+  icon: IconType;
 };
 
 type MenuSection = {
@@ -36,19 +36,19 @@ const menuSections: MenuSection[] = [
         href: "/admin",
         label: "Dashboard",
         exact: true,
-        icon: DashboardIcon,
+        icon: HiSquares2X2,
       },
     ],
   },
   {
     items: [
-      { href: "/admin/tours", label: "Tours", icon: ToursIcon },
-      { href: "/admin/blog", label: "Posts", icon: PostsIcon },
-      { href: "/admin/bookings", label: "Bookings", icon: BookingsIcon },
-      { href: "/admin/consultations", label: "Consultations", icon: ConsultationsIcon },
-      { href: "/admin/messages", label: "Messages", icon: ContactMessagesIcon },
-      { href: "/admin/newsletter", label: "Newsletter", icon: NewsletterIcon },
-      { href: "/admin/about", label: "About team", icon: AboutIcon },
+      { href: "/admin/tours", label: "Tours", icon: HiMapPin },
+      { href: "/admin/blog", label: "Posts", icon: HiNewspaper },
+      { href: "/admin/bookings", label: "Bookings", icon: HiCalendarDays },
+      { href: "/admin/consultations", label: "Consultations", icon: HiChatBubbleLeftRight },
+      { href: "/admin/messages", label: "Messages", icon: HiEnvelope },
+      { href: "/admin/newsletter", label: "Newsletter", icon: HiEnvelopeOpen },
+      { href: "/admin/about", label: "About team", icon: HiUserGroup },
     ],
   },
   {
@@ -57,9 +57,9 @@ const menuSections: MenuSection[] = [
         href: "/admin/settings",
         label: "Settings",
         adminOnly: true,
-        icon: SettingsIcon,
+        icon: HiCog6Tooth,
       },
-      { href: "/admin/users", label: "Users", adminOnly: true, icon: UsersIcon },
+      { href: "/admin/users", label: "Users", adminOnly: true, icon: HiUsers },
     ],
   },
 ];
@@ -103,7 +103,7 @@ export function AdminSidebar({ role }: Props) {
                         aria-current={active ? "page" : undefined}
                         className={`admin-sidebar-link ${active ? "admin-sidebar-link-active" : ""}`}
                       >
-                        <Icon className="admin-sidebar-icon" />
+                        <Icon className="admin-sidebar-icon" aria-hidden />
                         <span className="admin-sidebar-label">{item.label}</span>
                       </Link>
                     </li>

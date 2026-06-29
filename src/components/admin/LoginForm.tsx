@@ -1,24 +1,34 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useState } from "react";
 import {
   loginAction,
   requestPasswordResetAction,
+  type LoginActionState,
 } from "@/app/admin/actions/auth";
 import { PasswordInput } from "@/components/admin/PasswordInput";
 
 type Mode = "login" | "forgot";
 
 export function LoginForm({ resetSuccess }: { resetSuccess?: boolean }) {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
-  const [loginState, loginActionBound, loginPending] = useActionState(
-    loginAction,
-    undefined,
-  );
+  const [loginState, loginActionBound, loginPending] = useActionState<
+    LoginActionState | undefined,
+    FormData
+  >(loginAction, undefined);
   const [resetState, resetActionBound, resetPending] = useActionState(
     requestPasswordResetAction,
     undefined,
   );
+
+  useEffect(() => {
+    if (loginState?.success) {
+      router.replace("/admin");
+      router.refresh();
+    }
+  }, [loginState, router]);
 
   if (mode === "forgot") {
     return (

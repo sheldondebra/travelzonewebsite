@@ -1,16 +1,32 @@
 import Link from "next/link";
+import { HiArrowTopRightOnSquare } from "react-icons/hi2";
 import { logoutAction } from "@/app/admin/actions/auth";
+import { AdminHeaderSmsBalance } from "@/components/admin/AdminHeaderSmsBalance";
+import type { SplitSmsBalance } from "@/lib/splitsms";
+import type { StaffRole } from "@/lib/supabase/auth";
 
 type Props = {
   email: string;
+  role: StaffRole;
+  splitsmsReady: boolean;
+  smsBalance: SplitSmsBalance | null;
+  smsBalanceError: string | null;
   menuOpen?: boolean;
   onMenuToggle?: () => void;
 };
 
-export function AdminHeader({ email, menuOpen = false, onMenuToggle }: Props) {
+export function AdminHeader({
+  email,
+  role,
+  splitsmsReady,
+  smsBalance,
+  smsBalanceError,
+  menuOpen = false,
+  onMenuToggle,
+}: Props) {
   return (
     <header className="admin-bar">
-      <div className="flex items-center gap-3">
+      <div className="admin-bar-brand">
         {onMenuToggle ? (
           <button
             type="button"
@@ -22,17 +38,33 @@ export function AdminHeader({ email, menuOpen = false, onMenuToggle }: Props) {
             Menu
           </button>
         ) : null}
-        <Link href="/admin" className="admin-bar-link font-semibold">
+        <Link href="/admin" className="admin-bar-brand-link">
           Travel Zone Ghana
         </Link>
-        <Link href="/" target="_blank" className="admin-bar-link hidden sm:inline">
+        <Link
+          href="/"
+          target="_blank"
+          className="admin-bar-visit hidden sm:inline-flex"
+        >
           Visit site
+          <HiArrowTopRightOnSquare className="h-3.5 w-3.5" aria-hidden />
         </Link>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="hidden text-[12px] text-[#c3c4c7] sm:inline">{email}</span>
+
+      <AdminHeaderSmsBalance
+        role={role}
+        splitsmsReady={splitsmsReady}
+        initialBalance={smsBalance}
+        initialError={smsBalanceError}
+      />
+
+      <div className="admin-bar-actions">
+        <span className="admin-bar-user" title={email}>
+          {email}
+        </span>
+        <span className="admin-bar-divider" aria-hidden />
         <form action={logoutAction}>
-          <button type="submit" className="admin-bar-link">
+          <button type="submit" className="admin-bar-logout">
             Log out
           </button>
         </form>

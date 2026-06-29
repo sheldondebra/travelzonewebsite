@@ -8,7 +8,7 @@ import {
   updateContactMessageStatus,
 } from "@/lib/contact-messages-store";
 import { sendSms } from "@/lib/splitsms";
-import { getSmtpConfig, getSplitSmsConfig } from "@/lib/site-settings";
+import { getEmailDeliveryConfig, getSplitSmsConfig } from "@/lib/site-settings";
 import { requireAdmin, requireStaff } from "@/lib/supabase/auth";
 
 export type MessageReplyResult =
@@ -69,11 +69,11 @@ export async function replyContactMessageAction(
 
   try {
     if (channel === "email") {
-      const smtp = await getSmtpConfig();
-      if (!smtp) {
+      const delivery = await getEmailDeliveryConfig();
+      if (!delivery) {
         return {
           success: false,
-          error: "SMTP is not configured. Enable it under Admin → Settings.",
+          error: "Email is not configured. Set up Resend or SMTP under Admin → Settings → Email.",
         };
       }
 

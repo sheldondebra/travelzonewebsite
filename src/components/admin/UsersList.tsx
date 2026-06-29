@@ -1,14 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useActionState } from "react";
 import {
   deleteStaffAction,
   updateStaffRoleAction,
-  type UsersActionResult,
 } from "@/app/admin/actions/users";
-import { AdminNotice } from "@/components/admin/AdminChrome";
+import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
 import type { StaffRole } from "@/lib/supabase/auth";
 import { getStaffRoleLabel, STAFF_ROLE_OPTIONS, STAFF_ROLES } from "@/lib/staff-roles";
 
@@ -25,15 +23,6 @@ type Props = {
   users: StaffUser[];
   currentUserId: string;
 };
-
-function ActionMessage({ result }: { result: UsersActionResult | undefined }) {
-  if (!result) return null;
-  return (
-    <AdminNotice variant={result.success ? "success" : "error"}>
-      {result.success ? result.message : result.error}
-    </AdminNotice>
-  );
-}
 
 export function UsersList({ users, currentUserId }: Props) {
   const [filter, setFilter] = useState<RoleFilter>("all");
@@ -145,13 +134,13 @@ function UserRow({
     deleteStaffAction,
     undefined,
   );
-  const router = useRouter();
 
-  useEffect(() => {
-    if (updateState?.success || deleteState?.success) {
-      router.refresh();
-    }
-  }, [deleteState, router, updateState]);
+  useAdminActionFeedback(updateState, updatePending, {
+    loadingMessage: "Updating user…",
+  });
+  useAdminActionFeedback(deleteState, deletePending, {
+    loadingMessage: "Deleting user…",
+  });
 
   return (
     <tr>
@@ -162,8 +151,6 @@ function UserRow({
             (you)
           </span>
         ) : null}
-        {updateState ? <ActionMessage result={updateState} /> : null}
-        {deleteState ? <ActionMessage result={deleteState} /> : null}
       </td>
       <td>
         <span className="admin-role-badge">{getStaffRoleLabel(user.role)}</span>

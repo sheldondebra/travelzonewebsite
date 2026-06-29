@@ -1,12 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
-import { updatePasswordAction } from "@/app/admin/actions/auth";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect } from "react";
+import {
+  updatePasswordAction,
+  type UpdatePasswordActionState,
+} from "@/app/admin/actions/auth";
 import { PasswordInput } from "@/components/admin/PasswordInput";
 
 export function ResetPasswordForm() {
-  const [state, formAction, pending] = useActionState(updatePasswordAction, undefined);
+  const router = useRouter();
+  const [state, formAction, pending] = useActionState<
+    UpdatePasswordActionState | undefined,
+    FormData
+  >(updatePasswordAction, undefined);
+
+  useEffect(() => {
+    if (state?.success) {
+      router.replace("/admin/login?reset=success");
+    }
+  }, [router, state]);
 
   return (
     <div className="admin-login-form">

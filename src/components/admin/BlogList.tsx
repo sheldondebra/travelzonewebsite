@@ -2,15 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useActionState } from "react";
 import {
   deleteBlogPostFormAction,
   updateBlogPostStatusAction,
-  type BlogActionResult,
 } from "@/app/admin/actions/blog";
-import { AdminNotice } from "@/components/admin/AdminChrome";
+import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import type { AdminBlogPost, ContentStatus } from "@/lib/content-types";
 import type { StaffRole } from "@/lib/supabase/auth";
@@ -45,15 +43,7 @@ function PostThumbnail({ post }: { post: AdminBlogPost }) {
   );
 }
 
-function PostRow({
-  post,
-  role,
-  onActionResult,
-}: {
-  post: AdminBlogPost;
-  role: StaffRole;
-  onActionResult: (result: BlogActionResult) => void;
-}) {
+function PostRow({ post, role }: { post: AdminBlogPost; role: StaffRole }) {
   const [statusState, statusAction, statusPending] = useActionState(
     updateBlogPostStatusAction,
     undefined,
@@ -63,13 +53,12 @@ function PostRow({
     undefined,
   );
 
-  useEffect(() => {
-    if (statusState) onActionResult(statusState);
-  }, [statusState, onActionResult]);
-
-  useEffect(() => {
-    if (deleteState) onActionResult(deleteState);
-  }, [deleteState, onActionResult]);
+  useAdminActionFeedback(statusState, statusPending, {
+    loadingMessage: "Updating post…",
+  });
+  useAdminActionFeedback(deleteState, deletePending, {
+    loadingMessage: "Deleting post…",
+  });
 
   const nextStatus = post.status === "published" ? "draft" : "published";
   const statusLabel = post.status === "published" ? "Unpublish" : "Publish";
@@ -158,10 +147,8 @@ function PostRow({
 }
 
 export function BlogList({ posts, role }: Props) {
-  const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
-  const [feedback, setFeedback] = useState<BlogActionResult | null>(null);
 
   const published = posts.filter((post) => post.status === "published").length;
   const drafts = posts.filter((post) => post.status === "draft").length;
@@ -177,34 +164,8 @@ export function BlogList({ posts, role }: Props) {
     });
   }, [filter, posts, query]);
 
-  const handleActionResult = useMemo(
-    () => (result: BlogActionResult) => {
-      setFeedback(result);
-      if (result.success) {
-        router.refresh();
-      }
-    },
-    [router],
-  );
-
   return (
     <>
-      {feedback ? (
-        <AdminNotice variant={feedback.success ? "success" : "error"}>
-          <div className="flex items-start justify-between gap-3">
-            <span>{feedback.success ? feedback.message : feedback.error}</span>
-            <button
-              type="button"
-              className="admin-row-action-link shrink-0"
-              onClick={() => setFeedback(null)}
-              aria-label="Dismiss message"
-            >
-              Dismiss
-            </button>
-          </div>
-        </AdminNotice>
-      ) : null}
-
       <div className="admin-tours-stats">
         <div className="admin-tours-stat">
           <span className="admin-tours-stat-value">{posts.length}</span>
@@ -292,14 +253,7 @@ export function BlogList({ posts, role }: Props) {
                   </td>
                 </tr>
               ) : (
-                filtered.map((post) => (
-                  <PostRow
-                    key={post.id}
-                    post={post}
-                    role={role}
-                    onActionResult={handleActionResult}
-                  />
-                ))
+                filtered.map((post) => <PostRow key={post.id} post={post} role={role} />)
               )}
             </tbody>
           </table>

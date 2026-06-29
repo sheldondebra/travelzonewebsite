@@ -8,6 +8,7 @@ import {
   bookingAmountLabel,
   formatBookingDateTime,
   formatTravelDate,
+  getBookingStats,
   matchesBookingFilter,
   matchesBookingSearch,
   type BookingFilter,
@@ -27,9 +28,24 @@ const filters: { id: BookingFilter; label: string }[] = [
   { id: "cancelled", label: "Cancelled" },
 ];
 
+const statItems = [
+  { key: "total", label: "Total bookings" },
+  { key: "pendingPayment", label: "Awaiting payment" },
+  { key: "paid", label: "Paid" },
+  { key: "pendingReview", label: "Pending review" },
+  { key: "confirmed", label: "Confirmed" },
+  { key: "cancelled", label: "Cancelled" },
+] as const;
+
+function filterCount(bookings: TourBooking[], filter: BookingFilter) {
+  if (filter === "all") return bookings.length;
+  return bookings.filter((booking) => matchesBookingFilter(booking, filter)).length;
+}
+
 export function BookingsList({ bookings }: Props) {
   const [filter, setFilter] = useState<BookingFilter>("all");
   const [query, setQuery] = useState("");
+  const stats = getBookingStats(bookings);
 
   const filtered = useMemo(
     () =>
@@ -42,88 +58,118 @@ export function BookingsList({ bookings }: Props) {
 
   return (
     <>
-      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <ul className="admin-subsubsub">
-          {filters.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className={filter === item.id ? "current" : ""}
-                onClick={() => setFilter(item.id)}
-              >
-                {item.label}
-              </button>
-            </li>
+      <div className="admin-bookings-top">
+        <div className="admin-bookings-stats">
+          {statItems.map((item) => (
+            <div key={item.key} className="admin-bookings-stat">
+              <span className="admin-bookings-stat-value">{stats[item.key]}</span>
+              <span className="admin-bookings-stat-label">{item.label}</span>
+            </div>
           ))}
-        </ul>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search bookings"
-          className="admin-input w-full sm:max-w-xs"
-        />
+        </div>
+
+        <div className="admin-bookings-toolbar">
+          <ul className="admin-subsubsub">
+            {filters.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className={filter === item.id ? "current" : ""}
+                  onClick={() => setFilter(item.id)}
+                >
+                  {item.label} ({filterCount(bookings, item.id)})
+                </button>
+              </li>
+            ))}
+          </ul>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by reference, name, email, tour…"
+            className="admin-input w-full"
+            aria-label="Search bookings"
+          />
+        </div>
       </div>
 
       <div className="admin-postbox overflow-hidden p-0">
         <div className="admin-table-scroll">
-        <table className="admin-list-table">
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Customer</th>
-              <th>Tour</th>
-              <th>Travel</th>
-              <th>Payment</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
+          <table className="admin-list-table admin-bookings-table">
+            <thead>
               <tr>
-                <td colSpan={6} className="py-6 text-[#646970]">
-                  {bookings.length === 0
-                    ? "No bookings yet."
-                    : "No bookings match your filter."}
-                </td>
+                <th>Reference</th>
+                <th>Customer</th>
+                <th>Tour</th>
+                <th className="hidden md:table-cell">Travel</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th className="hidden lg:table-cell">Actions</th>
               </tr>
-            ) : (
-              filtered.map((booking) => {
-                const amount = bookingAmountLabel(booking);
-                return (
-                  <tr key={booking.id}>
-                    <td>
-                      <Link
-                        href={`/admin/bookings/${booking.id}`}
-                        className="admin-row-title"
-                      >
-                        {booking.id}
-                      </Link>
-                      <div className="admin-row-actions text-[#646970]">
-                        {formatBookingDateTime(booking.createdAt)}
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-10 text-center text-[#646970]">
+                    {bookings.length === 0 ? (
+                      <div className="space-y-3">
+                        <p>No tour bookings yet. They will appear here when customers book from the site.</p>
+                        <Link href="/book" target="_blank" className="admin-button-secondary">
+                          View book page
+                        </Link>
                       </div>
-                    </td>
-                    <td>
-                      <strong>{booking.fullName}</strong>
-                      <div className="text-[#646970]">{booking.email}</div>
-                    </td>
-                    <td>{booking.tourTitle}</td>
-                    <td className="text-[#646970]">
-                      {formatTravelDate(booking.travelDate)}
-                    </td>
-                    <td>
-                      <StatusBadge status={booking.paymentStatus} />
-                      <div>{formatPrice(amount.amount)}</div>
-                    </td>
-                    <td>
-                      <StatusBadge status={booking.status} />
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                    ) : (
+                      "No bookings match your search or filter."
+                    )}
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((booking) => {
+                  const amount = bookingAmountLabel(booking);
+                  return (
+                    <tr key={booking.id}>
+                      <td>
+                        <Link
+                          href={`/admin/bookings/${booking.id}`}
+                          className="admin-row-title"
+                        >
+                          {booking.id}
+                        </Link>
+                        <div className="admin-row-actions text-[#646970]">
+                          {formatBookingDateTime(booking.createdAt)}
+                        </div>
+                      </td>
+                      <td>
+                        <strong>{booking.fullName}</strong>
+                        <div className="text-[#646970]">{booking.email}</div>
+                      </td>
+                      <td className="min-w-[160px]">{booking.tourTitle}</td>
+                      <td className="hidden text-[#646970] md:table-cell">
+                        {formatTravelDate(booking.travelDate)}
+                        <div>
+                          {booking.travelers} traveler{booking.travelers === 1 ? "" : "s"}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="font-semibold text-[#1d2327]">
+                          {formatPrice(amount.amount)}
+                        </div>
+                        <StatusBadge status={booking.paymentStatus} />
+                      </td>
+                      <td>
+                        <StatusBadge status={booking.status} />
+                      </td>
+                      <td className="hidden lg:table-cell">
+                        <div className="admin-row-actions">
+                          <Link href={`/admin/bookings/${booking.id}`}>View</Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </>

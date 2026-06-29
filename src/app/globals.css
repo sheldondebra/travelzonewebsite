@@ -134,11 +134,83 @@ body {
 }
 
 .admin-bar {
-  @apply flex min-h-11 items-center justify-between bg-[#1d2327] px-3 text-[#f0f0f1] md:min-h-8;
+  @apply flex min-h-11 items-center justify-between gap-3 bg-[#1d2327] px-3 text-[#f0f0f1] md:min-h-10 md:px-4;
+}
+
+.admin-bar-brand {
+  @apply flex min-w-0 items-center gap-2.5;
+}
+
+.admin-bar-brand-link {
+  @apply truncate text-[14px] font-semibold text-white no-underline hover:text-white;
+}
+
+.admin-bar-visit {
+  @apply items-center gap-1 rounded-[3px] border border-white/15 px-2 py-1 text-[12px] text-[#c3c4c7] no-underline transition-colors hover:border-white/30 hover:bg-white/5 hover:text-white;
 }
 
 .admin-bar-menu {
-  @apply rounded-[3px] border border-white/20 px-2.5 py-1.5 text-[12px] font-semibold text-white hover:bg-white/10;
+  @apply shrink-0 rounded-[3px] border border-white/20 px-2.5 py-1.5 text-[12px] font-semibold text-white hover:bg-white/10;
+}
+
+.admin-bar-actions {
+  @apply flex shrink-0 items-center gap-2 sm:gap-3;
+}
+
+.admin-bar-user {
+  @apply hidden max-w-[200px] truncate text-[12px] text-[#c3c4c7] lg:inline;
+}
+
+.admin-bar-divider {
+  @apply hidden h-4 w-px bg-white/20 lg:block;
+}
+
+.admin-bar-logout {
+  @apply rounded-[3px] border border-white/20 bg-transparent px-2.5 py-1 text-[12px] font-medium text-[#f0f0f1] hover:bg-white/10 hover:text-white;
+}
+
+.admin-bar-sms {
+  @apply hidden min-w-0 items-center gap-2 rounded-[3px] border border-white/15 bg-white/5 px-2.5 py-1.5 text-[12px] text-[#f0f0f1] md:flex;
+}
+
+.admin-bar-sms-muted {
+  @apply text-[#c3c4c7] no-underline transition-colors hover:border-white/30 hover:bg-white/10 hover:text-white;
+}
+
+.admin-bar-sms-icon {
+  @apply h-4 w-4 shrink-0 text-[#72aee6];
+}
+
+.admin-bar-sms-credits {
+  @apply font-semibold text-white;
+}
+
+.admin-bar-sms-separator {
+  @apply text-[#8c8f94];
+}
+
+.admin-bar-sms-wallet {
+  @apply text-[#c3c4c7];
+}
+
+.admin-bar-sms-badge {
+  @apply rounded-[3px] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide;
+}
+
+.admin-bar-sms-badge-live {
+  @apply bg-[#007017]/20 text-[#68de7c];
+}
+
+.admin-bar-sms-badge-sandbox {
+  @apply bg-[#996800]/20 text-[#f0c33c];
+}
+
+.admin-bar-sms-unavailable {
+  @apply text-[#c3c4c7];
+}
+
+.admin-bar-sms-refresh {
+  @apply ml-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-[3px] border-0 bg-transparent p-0 text-[#c3c4c7] hover:bg-white/10 hover:text-white disabled:opacity-50;
 }
 
 .admin-bar-link {
@@ -411,6 +483,182 @@ body {
   @apply mb-4 grid grid-cols-3 gap-3 sm:max-w-lg;
 }
 
+.admin-bookings-top {
+  @apply mb-5 grid gap-4;
+}
+
+.admin-bookings-stats {
+  @apply grid grid-cols-2 gap-3 sm:grid-cols-3;
+}
+
+.admin-bookings-stat {
+  @apply flex min-h-[88px] flex-col justify-center rounded-[3px] border border-[#c3c4c7] bg-white px-4 py-3 shadow-[0_1px_1px_rgba(0,0,0,0.04)];
+}
+
+.admin-bookings-stat-value {
+  @apply block text-2xl font-semibold leading-none text-[#1d2327];
+}
+
+.admin-bookings-stat-label {
+  @apply mt-2 block text-[11px] font-medium uppercase tracking-wide text-[#646970];
+}
+
+.admin-bookings-toolbar {
+  @apply grid gap-3 rounded-[3px] border border-[#c3c4c7] bg-white px-4 py-3 shadow-[0_1px_1px_rgba(0,0,0,0.04)] lg:grid-cols-[minmax(0,1fr)_minmax(220px,280px)] lg:items-center;
+}
+
+.admin-bookings-toolbar .admin-subsubsub {
+  @apply mb-0;
+}
+
+.admin-bookings-table tbody td {
+  @apply align-middle;
+}
+
+.admin-schedule-widget .admin-postbox-body {
+  @apply p-4 sm:p-5;
+}
+
+.admin-schedule-form {
+  @apply space-y-5;
+}
+
+.admin-schedule-intro {
+  @apply m-0 text-[13px] text-[#646970];
+}
+
+.admin-schedule-grid {
+  @apply grid gap-5 lg:grid-cols-2;
+}
+
+.admin-schedule-field {
+  @apply space-y-2;
+}
+
+.admin-schedule-empty {
+  @apply col-span-full m-0 rounded-[3px] border border-dashed border-[#c3c4c7] bg-[#f6f7f7] px-3 py-4 text-center text-[13px] text-[#646970];
+}
+
+.admin-day-pills {
+  @apply flex flex-wrap gap-2;
+}
+
+.admin-day-pill {
+  @apply inline-flex min-w-[52px] cursor-pointer items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-white px-3 py-2 text-[13px] font-semibold text-[#646970] shadow-[0_1px_1px_rgba(0,0,0,0.04)] transition-colors hover:border-[#2271b1] hover:text-[#2271b1];
+}
+
+.admin-day-pill:has(input:checked) {
+  @apply border-[#2271b1] bg-[#2271b1] text-white hover:border-[#135e96] hover:bg-[#135e96] hover:text-white;
+}
+
+.admin-day-pill:has(input:disabled) {
+  @apply cursor-not-allowed opacity-60;
+}
+
+.admin-time-slots-grid,
+.admin-blocked-dates-grid {
+  @apply flex min-h-[52px] flex-wrap gap-2 rounded-[3px] border border-[#dcdcde] bg-[#f6f7f7] p-3;
+}
+
+.admin-time-slot-chip,
+.admin-blocked-date-chip {
+  @apply inline-flex items-center gap-1.5 rounded-full border border-[#2271b1] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#1d2327] shadow-[0_1px_1px_rgba(0,0,0,0.04)] transition-colors hover:border-[#d63638] hover:bg-[#fcf0f1] hover:text-[#d63638];
+}
+
+.admin-time-slot-chip-remove {
+  @apply text-base leading-none text-[#646970];
+}
+
+.admin-time-slot-chip:hover .admin-time-slot-chip-remove,
+.admin-blocked-date-chip:hover .admin-time-slot-chip-remove {
+  @apply text-[#d63638];
+}
+
+.admin-schedule-add-row {
+  @apply flex flex-col gap-2 sm:flex-row sm:items-center;
+}
+
+.admin-time-input,
+.admin-date-input {
+  @apply w-full sm:max-w-[180px];
+}
+
+.admin-quick-picks {
+  @apply flex flex-wrap items-center gap-2;
+}
+
+.admin-quick-picks-label {
+  @apply text-[12px] font-semibold text-[#646970];
+}
+
+.admin-quick-pick-btn {
+  @apply rounded-full border border-[#c3c4c7] bg-white px-2.5 py-1 text-[12px] font-semibold text-[#2271b1] transition-colors hover:border-[#2271b1] hover:bg-[#f0f6fc] disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.admin-schedule-rules {
+  @apply grid gap-4 sm:grid-cols-2;
+}
+
+.admin-consultations-top {
+  @apply mb-5 grid gap-4;
+}
+
+.admin-consultations-stats {
+  @apply grid grid-cols-2 gap-3 sm:grid-cols-4;
+}
+
+.admin-consultations-stat {
+  @apply flex min-h-[88px] flex-col justify-center rounded-[3px] border border-[#c3c4c7] bg-white px-4 py-3 shadow-[0_1px_1px_rgba(0,0,0,0.04)];
+}
+
+.admin-consultations-stat-value {
+  @apply block text-2xl font-semibold leading-none text-[#1d2327];
+}
+
+.admin-consultations-stat-label {
+  @apply mt-2 block text-[11px] font-medium uppercase tracking-wide text-[#646970];
+}
+
+.admin-consultations-toolbar {
+  @apply grid gap-3 rounded-[3px] border border-[#c3c4c7] bg-white px-4 py-3 shadow-[0_1px_1px_rgba(0,0,0,0.04)] lg:grid-cols-[minmax(0,1fr)_minmax(220px,280px)] lg:items-center;
+}
+
+.admin-consultations-toolbar .admin-subsubsub {
+  @apply mb-0;
+}
+
+.admin-about-top {
+  @apply mb-5 grid gap-4;
+}
+
+.admin-about-stats {
+  @apply grid grid-cols-3 gap-3 sm:max-w-xl;
+}
+
+.admin-about-stat {
+  @apply flex min-h-[88px] flex-col justify-center rounded-[3px] border border-[#c3c4c7] bg-white px-4 py-3 shadow-[0_1px_1px_rgba(0,0,0,0.04)];
+}
+
+.admin-about-stat-value {
+  @apply block text-2xl font-semibold leading-none text-[#1d2327];
+}
+
+.admin-about-stat-label {
+  @apply mt-2 block text-[11px] font-medium uppercase tracking-wide text-[#646970];
+}
+
+.admin-about-toolbar {
+  @apply rounded-[3px] border border-[#c3c4c7] bg-white px-4 py-3 shadow-[0_1px_1px_rgba(0,0,0,0.04)];
+}
+
+.admin-about-toolbar .admin-subsubsub {
+  @apply mb-0;
+}
+
+.admin-about-table tbody td {
+  @apply align-top;
+}
+
 .admin-tours-stat {
   @apply rounded-[3px] border border-[#c3c4c7] bg-white px-3 py-2.5 text-center shadow-[0_1px_1px_rgba(0,0,0,0.04)];
 }
@@ -489,6 +737,60 @@ body {
 
 .admin-notice-success {
   @apply border-l-[#00a32a];
+}
+
+.admin-busy-bar {
+  @apply sticky top-0 z-40 border-b border-[#c3c4c7] bg-[#f6f7f7] px-4 py-2;
+}
+
+.admin-busy-bar-track {
+  @apply mb-1 h-1 overflow-hidden rounded-full bg-[#dcdcde];
+}
+
+.admin-busy-bar-fill {
+  @apply h-full w-1/3 rounded-full bg-[#2271b1];
+  animation: admin-busy-indeterminate 1.1s ease-in-out infinite;
+}
+
+.admin-busy-bar-label {
+  @apply block text-[12px] font-medium text-[#646970];
+}
+
+.admin-toast-stack {
+  @apply pointer-events-none fixed right-4 bottom-4 z-[100] flex w-full max-w-sm flex-col gap-2;
+}
+
+.admin-toast {
+  @apply pointer-events-auto flex items-start gap-3 rounded-[4px] border bg-white px-3 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.12)];
+}
+
+.admin-toast-success {
+  @apply border-l-4 border-[#00a32a];
+}
+
+.admin-toast-error {
+  @apply border-l-4 border-[#d63638];
+}
+
+.admin-toast-info {
+  @apply border-l-4 border-[#72aee6];
+}
+
+.admin-toast-message {
+  @apply flex-1 text-[13px] leading-snug text-[#1d2327];
+}
+
+.admin-toast-dismiss {
+  @apply -mt-0.5 shrink-0 text-[18px] leading-none text-[#787c82] hover:text-[#1d2327];
+}
+
+@keyframes admin-busy-indeterminate {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
 }
 
 .admin-tab-bar {
