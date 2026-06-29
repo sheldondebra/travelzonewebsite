@@ -29,7 +29,6 @@ const INTERVAL_MS = 7000;
 export function Hero() {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
-  const slide = slides[active];
 
   const goTo = useCallback((index: number) => {
     setActive((index + slides.length) % slides.length);
@@ -51,15 +50,20 @@ export function Hero() {
       onMouseLeave={() => setPaused(false)}
     >
       <div className="absolute inset-0">
-        <Image
-          key={slide.src}
-          src={slide.src}
-          alt={slide.alt}
-          fill
-          priority={active === 0}
-          className="object-cover object-center"
-          sizes="100vw"
-        />
+        {slides.map((item, index) => (
+          <Image
+            key={item.src}
+            src={item.src}
+            alt={item.alt}
+            fill
+            priority={index === 0}
+            loading={index === 0 ? undefined : "lazy"}
+            className={`object-cover object-center transition-opacity duration-700 ${
+              index === active ? "opacity-100" : "opacity-0"
+            }`}
+            sizes="100vw"
+          />
+        ))}
       </div>
 
       <div className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/70 to-navy/40" />

@@ -27,7 +27,7 @@ export default function TicketsPage() {
       <main>
         <PageHero
           label="Airline Ticketing"
-          title="Flights booked by people, not bots"
+          title="Talk to an expert about your flight"
           description="Domestic, regional, and international tickets from our East Legon desk. We search fares, send you options, and issue your ticket — you pay offline when you're ready."
           image="/images/hero/travel-wall.jpg"
           imageAlt="Travel Zone airline ticketing service"

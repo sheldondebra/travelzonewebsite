@@ -20,10 +20,10 @@ export function ServicesStrip() {
         <div className="grid items-start gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16">
           <div className="relative aspect-[4/5] overflow-hidden lg:aspect-auto lg:min-h-[520px]">
             <Image
-              src="/images/about/brochure.jpg"
-              alt="TravelZone services brochure"
+              src="/images/about/travel-couple-airport.png"
+              alt="Couple with luggage at the airport"
               fill
-              className="object-cover"
+              className="object-cover object-[72%_center]"
               sizes="(max-width: 1024px) 100vw, 45vw"
             />
           </div>

@@ -15,4 +15,18 @@ export function getWhatsAppUrl(message = DEFAULT_MESSAGE) {
   return `https://wa.me/${phone}?text=${text}`;
 }
 
+/** wa.me link to message a customer (Ghana-friendly phone normalization). */
+export function getCustomerWhatsAppUrl(phone: string, message: string) {
+  const digits = phone.replace(/\D/g, "");
+  let normalized = digits;
+
+  if (digits.startsWith("0")) {
+    normalized = `233${digits.slice(1)}`;
+  } else if (digits.length === 9) {
+    normalized = `233${digits}`;
+  }
+
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+}
+
 export const whatsappPrefillMessage = DEFAULT_MESSAGE;

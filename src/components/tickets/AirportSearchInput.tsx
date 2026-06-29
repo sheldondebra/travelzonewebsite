@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { HiMagnifyingGlass, HiXMark } from "react-icons/hi2";
-import { formatAirport, searchAirports, type Airport } from "@/lib/airports";
+import { formatAirport, searchAirportGroups, type Airport } from "@/lib/airports";
 
 type AirportSearchInputProps = {
   id: string;
@@ -41,11 +41,16 @@ export function AirportSearchInput({
     setQuery(value);
   }, [value]);
 
-  const results = useMemo(() => {
-    const airports = searchAirports(query, 8);
-    if (!excludeValue) return airports;
-    return airports.filter((airport) => formatAirport(airport) !== excludeValue);
+  const groups = useMemo(() => {
+    return searchAirportGroups(query, 12).map((group) => ({
+      ...group,
+      airports: excludeValue
+        ? group.airports.filter((airport) => formatAirport(airport) !== excludeValue)
+        : group.airports,
+    })).filter((group) => group.airports.length > 0);
   }, [query, excludeValue]);
+
+  const results = useMemo(() => groups.flatMap((group) => group.airports), [groups]);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -103,6 +108,8 @@ export function AirportSearchInput({
     }
   }
 
+  let resultIndex = -1;
+
   return (
     <div ref={containerRef} className="relative">
       <label htmlFor={id} className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-muted">
@@ -147,33 +154,45 @@ export function AirportSearchInput({
         <ul
           id={listId}
           role="listbox"
-          className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg"
+          className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg"
         >
-          {results.map((airport, index) => {
-            const formatted = formatAirport(airport);
-            const active = index === activeIndex;
-            return (
-              <li key={airport.iata} role="option" aria-selected={active}>
-                <button
-                  type="button"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => selectAirport(airport)}
-                  onMouseEnter={() => setActiveIndex(index)}
-                  className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm transition-colors ${
-                    active ? "bg-cream text-navy" : "text-navy hover:bg-cream/70"
-                  }`}
-                >
-                  <span>
-                    <span className="font-medium">{airport.city}</span>
-                    <span className="ml-1.5 text-text-muted">{airport.country}</span>
-                  </span>
-                  <span className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-navy">
-                    {airport.iata}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
+          {groups.map((group) => (
+            <li key={group.category} role="presentation">
+              <p className="sticky top-0 bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
+                {group.label}
+              </p>
+              <ul role="group" aria-label={group.label}>
+                {group.airports.map((airport) => {
+                  resultIndex += 1;
+                  const index = resultIndex;
+                  const formatted = formatAirport(airport);
+                  const active = index === activeIndex;
+
+                  return (
+                    <li key={airport.iata} role="option" aria-selected={active}>
+                      <button
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => selectAirport(airport)}
+                        onMouseEnter={() => setActiveIndex(index)}
+                        className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm transition-colors ${
+                          active ? "bg-cream text-navy" : "text-navy hover:bg-cream/70"
+                        }`}
+                      >
+                        <span>
+                          <span className="font-medium">{airport.city}</span>
+                          <span className="ml-1.5 text-text-muted">{airport.country}</span>
+                        </span>
+                        <span className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-navy">
+                          {airport.iata}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          ))}
         </ul>
       ) : null}
 

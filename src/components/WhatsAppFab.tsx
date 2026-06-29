@@ -23,17 +23,27 @@ export function WhatsAppFab() {
 
   if (pathname.startsWith("/admin")) return null;
 
+  const bottomClass = showBanner
+    ? "bottom-28 sm:bottom-[max(1.5rem,env(safe-area-inset-bottom))]"
+    : "bottom-[max(1.5rem,env(safe-area-inset-bottom))]";
+
   return (
     <a
       href={getWhatsAppUrl()}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat with Travel Zone Ghana on WhatsApp"
-      className={`fixed right-5 z-[90] flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105 hover:bg-[#20bd5a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366] ${
-        showBanner ? "bottom-28 sm:bottom-6" : "bottom-6"
-      }`}
+      className={`group fixed right-4 z-[90] flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#25D366] to-[#1da851] text-white shadow-[0_8px_24px_rgba(37,211,102,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_32px_rgba(37,211,102,0.45)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:right-5 ${bottomClass}`}
     >
-      <WhatsAppIcon className="h-7 w-7" />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-300 group-hover:opacity-100 motion-reduce:transition-none"
+        style={{
+          background:
+            "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.22), transparent 55%)",
+        }}
+      />
+      <WhatsAppIcon className="relative h-7 w-7" />
     </a>
   );
 }

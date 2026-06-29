@@ -43,6 +43,20 @@ function rowToTour(row: Record<string, unknown>): Tour {
   };
 }
 
+function rowToBlogPostListItem(row: Record<string, unknown>): BlogPost {
+  return {
+    slug: row.slug as string,
+    title: row.title as string,
+    excerpt: (row.excerpt as string) ?? "",
+    content: [],
+    image: normalizeMediaUrl((row.image as string) ?? ""),
+    date: (row.display_date as string) ?? "",
+    category: (row.category as string) ?? "",
+    readTime: (row.read_time as string) ?? "5 min read",
+    updatedAt: (row.updated_at as string) ?? undefined,
+  };
+}
+
 function rowToBlogPost(row: Record<string, unknown>): BlogPost {
   const bodyHtml = sanitizeBlogHtml((row.body_html as string) ?? "");
   return {
@@ -68,17 +82,30 @@ export function htmlToParagraphs(html: string): string[] {
   );
 }
 
+const TOUR_LIST_COLUMNS =
+  "slug, title, tagline, location, duration, price, currency, price_note, travel_period, image, category";
+
+const BLOG_LIST_COLUMNS =
+  "slug, title, excerpt, image, display_date, category, read_time, updated_at, published_at";
+
 async function loadPublishedTours(): Promise<Tour[]> {
   if (!isSupabaseConfigured()) return staticTours.map(normalizeTourMedia);
 
   const { data, error } = await anonClient()
     .from("tours")
-    .select("*")
+    .select(TOUR_LIST_COLUMNS)
     .eq("status", "published")
     .order("updated_at", { ascending: false });
 
   if (error || !data?.length) return staticTours.map(normalizeTourMedia);
-  return data.map((row) => rowToTour(row));
+  return data.map((row) => ({
+    ...rowToTour(row),
+    gallery: [],
+    description: "",
+    overview: [],
+    highlights: [],
+    included: [],
+  }));
 }
 
 function normalizeTourMedia(tour: Tour): Tour {
@@ -111,19 +138,31 @@ async function loadTourBySlug(slug: string): Promise<Tour | null> {
 
 async function loadPublishedBlogPosts(): Promise<BlogPost[]> {
   if (!isSupabaseConfigured()) {
-    return staticBlogPosts.map(withNormalizedBlogImage);
+    return staticBlogPosts.map((post) =>
+      withNormalizedBlogImage({
+        ...post,
+        content: [],
+        bodyHtml: undefined,
+      }),
+    );
   }
 
   const { data, error } = await anonClient()
     .from("blog_posts")
-    .select("*")
+    .select(BLOG_LIST_COLUMNS)
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
   if (error || !data?.length) {
-    return staticBlogPosts.map(withNormalizedBlogImage);
+    return staticBlogPosts.map((post) =>
+      withNormalizedBlogImage({
+        ...post,
+        content: [],
+        bodyHtml: undefined,
+      }),
+    );
   }
-  return data.map((row) => rowToBlogPost(row));
+  return data.map((row) => rowToBlogPostListItem(row));
 }
 
 async function loadBlogPostBySlug(slug: string): Promise<BlogPost | null> {

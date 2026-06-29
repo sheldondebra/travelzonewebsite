@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TicketRequestReplyForm } from "@/components/admin/TicketRequestReplyForm";
 import { TicketRequestStatusForm } from "@/components/admin/TicketRequestStatusForm";
 import { AdminPageHeader, AdminWidget } from "@/components/admin/AdminChrome";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -12,6 +13,7 @@ import {
   getTripTypeLabel,
 } from "@/lib/ticket-requests";
 import { getTicketRequestById } from "@/lib/ticket-requests-store";
+import { isEmailConfigured, getSplitSmsConfig } from "@/lib/site-settings";
 import { getStaffUser } from "@/lib/supabase/auth";
 
 type Props = {
@@ -23,7 +25,11 @@ export default async function AdminTicketRequestDetailPage({ params }: Props) {
   const request = await getTicketRequestById(id);
   if (!request) notFound();
 
-  const staff = await getStaffUser();
+  const [staff, emailReady, sms] = await Promise.all([
+    getStaffUser(),
+    isEmailConfigured(),
+    getSplitSmsConfig(),
+  ]);
 
   return (
     <>
@@ -76,14 +82,30 @@ export default async function AdminTicketRequestDetailPage({ params }: Props) {
           </table>
         </AdminWidget>
 
-        {staff?.role === "admin" ? (
-          <AdminWidget title="Update status">
-            <TicketRequestStatusForm
+        <div className="space-y-4">
+          <AdminWidget title="Contact customer">
+            <TicketRequestReplyForm
               requestId={request.id}
-              currentStatus={request.status}
+              fullName={request.fullName}
+              recipientEmail={request.email}
+              recipientPhone={request.phone}
+              origin={request.origin}
+              destination={request.destination}
+              status={request.status}
+              emailReady={emailReady}
+              smsReady={Boolean(sms)}
             />
           </AdminWidget>
-        ) : null}
+
+          {staff?.role === "admin" ? (
+            <AdminWidget title="Update status">
+              <TicketRequestStatusForm
+                requestId={request.id}
+                currentStatus={request.status}
+              />
+            </AdminWidget>
+          ) : null}
+        </div>
       </div>
     </>
   );

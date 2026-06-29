@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { TrustBanner } from "@/components/TrustBanner";
@@ -11,6 +12,10 @@ import { Testimonials } from "@/components/Testimonials";
 import { Blog } from "@/components/Blog";
 import { SocialFollow } from "@/components/SocialFollow";
 import { Footer } from "@/components/Footer";
+import {
+  BlogSectionSkeleton,
+  ToursSectionSkeleton,
+} from "@/components/home/HomeSectionSkeleton";
 import { createMetadata } from "@/lib/seo";
 
 export const revalidate = 3600;
@@ -32,10 +37,14 @@ export default function Home() {
         <StatsAbout />
         <WhyUs />
         <ServicesStrip />
-        <PopularTours />
+        <Suspense fallback={<ToursSectionSkeleton />}>
+          <PopularTours />
+        </Suspense>
         <Testimonials />
         <OfficeCta />
-        <Blog />
+        <Suspense fallback={<BlogSectionSkeleton />}>
+          <Blog />
+        </Suspense>
         <SocialFollow />
       </main>
       <Footer />

@@ -90,7 +90,7 @@ export function Header() {
 
         <div className="hidden lg:block">
           <Link href="/consultation" className="btn-primary px-6 py-2.5 text-[13px]">
-            Book consultation
+            Talk to an Expert
           </Link>
         </div>
 
@@ -130,7 +130,7 @@ export function Header() {
               className="btn-primary mt-2 w-fit"
               onClick={() => setMenuOpen(false)}
             >
-              Book consultation
+              Talk to an Expert
             </Link>
           </nav>
         </div>

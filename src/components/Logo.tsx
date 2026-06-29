@@ -6,6 +6,7 @@ type LogoProps = {
   variant?: "light" | "dark" | "color";
   size?: "sm" | "md" | "lg" | "xl";
   linkLabel?: string;
+  priority?: boolean;
 };
 
 const sizes = {
@@ -20,6 +21,7 @@ export function Logo({
   variant = "light",
   size = "lg",
   linkLabel,
+  priority = false,
 }: LogoProps) {
   const src =
     variant === "color"
@@ -41,7 +43,7 @@ export function Logo({
         width={320}
         height={96}
         className={imageClass}
-        priority
+        priority={priority}
       />
     </Link>
   );

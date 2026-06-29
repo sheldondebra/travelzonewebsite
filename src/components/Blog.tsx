@@ -46,7 +46,6 @@ export async function Blog() {
               src={featured.image}
               alt={featured.title}
               fill
-              priority
               className="z-0 object-cover transition-transform duration-700 group-hover:scale-[1.03]"
               sizes="(max-width: 1024px) 100vw, 58vw"
             />

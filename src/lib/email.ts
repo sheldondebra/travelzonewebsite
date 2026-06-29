@@ -82,6 +82,47 @@ Travel Zone Ghana
   });
 }
 
+export async function sendTicketRequestReplyEmail(params: {
+  request: {
+    id: string;
+    fullName: string;
+    email: string;
+    origin: string;
+    destination: string;
+    tripType: TripType;
+    departureDate: string;
+    returnDate?: string;
+  };
+  reply: string;
+}) {
+  const { request, reply } = params;
+  const route = `${request.origin} → ${request.destination}`;
+  const trip = getTripTypeLabel(request.tripType);
+  const dates =
+    request.tripType === "round-trip" && request.returnDate
+      ? `${formatShortDate(request.departureDate)} – ${formatShortDate(request.returnDate)}`
+      : formatShortDate(request.departureDate);
+
+  const text = `Hi ${request.fullName},
+
+${reply}
+
+---
+Regarding your ticket request (ref ${request.id})
+Route: ${route}
+Trip: ${trip}
+Travel dates: ${dates}
+
+Travel Zone Ghana
+#2 Boundary Road, East Legon, Accra`;
+
+  await sendEmail({
+    to: request.email,
+    subject: `Re: Ticket request ${request.id} — ${route}`,
+    text,
+  });
+}
+
 export async function sendBookingPaidEmails(booking: {
   id: string;
   fullName: string;
