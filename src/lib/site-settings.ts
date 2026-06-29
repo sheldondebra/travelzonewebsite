@@ -2,12 +2,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isMissingTableError } from "@/lib/supabase/db-errors";
 import type {
   AdminSettingsView,
+  ConsultationAvailabilitySettings,
   NotificationSettings,
   PaystackSettings,
   SiteSettings,
   SplitSmsSettings,
   SmtpSettings,
 } from "@/lib/settings-types";
+import {
+  DEFAULT_CONSULTATION_AVAILABILITY,
+  normalizeConsultationAvailability,
+} from "@/lib/consultation-availability";
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   paystack: {
@@ -46,6 +51,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     emailOnContactMessage: true,
     emailCustomerOnContactMessage: true,
   },
+  consultationAvailability: DEFAULT_CONSULTATION_AVAILABILITY,
 };
 
 function settingsFromEnv(): Partial<SiteSettings> {
@@ -71,28 +77,45 @@ function deepMergeSettings(base: SiteSettings, patch: Partial<SiteSettings>): Si
     splitsms: { ...base.splitsms, ...patch.splitsms },
     smtp: { ...base.smtp, ...patch.smtp },
     notifications: { ...base.notifications, ...patch.notifications },
+    consultationAvailability: normalizeConsultationAvailability(
+      patch.consultationAvailability ?? base.consultationAvailability,
+    ),
   };
 }
 
-async function loadRawSettingsFromDb(): Promise<Partial<SiteSettings> | null> {
+async function loadRawSettingsRow(): Promise<{
+  data: Partial<SiteSettings> | null;
+  revision: string;
+}> {
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("site_settings")
-      .select("data")
+      .select("data, updated_at")
       .eq("id", "default")
       .maybeSingle();
 
     if (error) {
-      if (isMissingTableError(error)) return null;
+      if (isMissingTableError(error)) return { data: null, revision: "none" };
       throw new Error(error.message);
     }
 
-    if (!data?.data || typeof data.data !== "object") return null;
-    return data.data as Partial<SiteSettings>;
+    if (!data?.data || typeof data.data !== "object") {
+      return { data: null, revision: data?.updated_at ?? "none" };
+    }
+
+    return {
+      data: data.data as Partial<SiteSettings>,
+      revision: data.updated_at ?? "none",
+    };
   } catch {
-    return null;
+    return { data: null, revision: "none" };
   }
+}
+
+async function loadRawSettingsFromDb(): Promise<Partial<SiteSettings> | null> {
+  const { data } = await loadRawSettingsRow();
+  return data;
 }
 
 export async function getSiteSettings(): Promise<SiteSettings> {
@@ -137,7 +160,12 @@ export function isPaystackConfiguredSync() {
 }
 
 export async function getAdminSettingsView(): Promise<AdminSettingsView> {
-  const settings = await getSiteSettings();
+  const fromEnv = settingsFromEnv();
+  const { data: fromDb, revision } = await loadRawSettingsRow();
+  const settings = deepMergeSettings(
+    deepMergeSettings(DEFAULT_SITE_SETTINGS, fromEnv),
+    fromDb ?? {},
+  );
 
   return {
     paystack: {
@@ -161,6 +189,7 @@ export async function getAdminSettingsView(): Promise<AdminSettingsView> {
       splitsmsReady: isSplitSmsReady(settings),
       smtpReady: isSmtpReady(settings),
     },
+    revision,
   };
 }
 
@@ -291,4 +320,21 @@ export async function getSmtpConfig() {
 export async function getNotificationSettings() {
   const settings = await getSiteSettings();
   return settings.notifications;
+}
+
+export async function getConsultationAvailability(): Promise<ConsultationAvailabilitySettings> {
+  const settings = await getSiteSettings();
+  return normalizeConsultationAvailability(settings.consultationAvailability);
+}
+
+export async function saveConsultationAvailabilitySettings(
+  input: ConsultationAvailabilitySettings,
+  userId: string,
+): Promise<void> {
+  const current = await getSiteSettings();
+  const next: SiteSettings = {
+    ...current,
+    consultationAvailability: normalizeConsultationAvailability(input),
+  };
+  await persistSettings(next, userId);
 }

@@ -4,6 +4,7 @@ import {
   AdminPageHeader,
   AdminWidget,
 } from "@/components/admin/AdminChrome";
+import { StaffUserForm } from "@/components/admin/StaffUserForm";
 import type { StaffRole } from "@/lib/supabase/auth";
 
 export type DashboardStats = {
@@ -13,6 +14,8 @@ export type DashboardStats = {
   pendingConsultations: number;
   pendingMessages: number;
   subscribers: number;
+  staffUsers: number;
+  aboutTeamMembers: number;
 };
 
 type Props = {
@@ -91,9 +94,21 @@ export function AdminDashboard({ stats, role, email, forbidden }: Props) {
                 Add new tour
               </Link>
             </p>
-            <p>
+            <p className="mb-2">
               <Link href="/admin/blog/new" className="admin-button-secondary">
                 Add new post
+              </Link>
+            </p>
+            {role === "admin" ? (
+              <p>
+                <Link href="/admin/users/new" className="admin-button-secondary">
+                  Add dashboard user
+                </Link>
+              </p>
+            ) : null}
+            <p>
+              <Link href="/admin/about/new" className="admin-button-secondary">
+                Add About page profile
               </Link>
             </p>
           </AdminWidget>
@@ -120,6 +135,9 @@ export function AdminDashboard({ stats, role, email, forbidden }: Props) {
               <li>
                 <Link href="/admin/newsletter">Newsletter</Link>
               </li>
+              <li>
+                <Link href="/admin/about">About team</Link>
+              </li>
               {role === "admin" ? (
                 <>
                   <li>
@@ -131,6 +149,38 @@ export function AdminDashboard({ stats, role, email, forbidden }: Props) {
                 </>
               ) : null}
             </ul>
+          </AdminWidget>
+
+          {role === "admin" ? (
+            <AdminWidget title="Dashboard users">
+              <p className="admin-field-hint mt-0">
+                <strong className="text-[#1d2327]">{stats.staffUsers}</strong> active staff
+                account{stats.staffUsers === 1 ? "" : "s"} with admin access.
+              </p>
+              <div className="mt-4 border-t border-[#f0f0f1] pt-4">
+                <p className="mb-3 text-[13px] font-semibold text-[#1d2327]">
+                  Add dashboard user
+                </p>
+                <StaffUserForm variant="compact" showCancel={false} />
+              </div>
+              <p className="mt-4 border-t border-[#f0f0f1] pt-3">
+                <Link href="/admin/users">Manage all users</Link>
+              </p>
+            </AdminWidget>
+          ) : null}
+
+          <AdminWidget title="About page team">
+            <p className="admin-field-hint mt-0">
+              <strong className="text-[#1d2327]">{stats.aboutTeamMembers}</strong> published
+              profile{stats.aboutTeamMembers === 1 ? "" : "s"} on{" "}
+              <Link href="/about" target="_blank">
+                /about
+              </Link>
+              .
+            </p>
+            <p className="mt-4 border-t border-[#f0f0f1] pt-3">
+              <Link href="/admin/about">Manage About page team</Link>
+            </p>
           </AdminWidget>
 
           <AdminWidget title="Site">

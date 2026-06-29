@@ -19,10 +19,10 @@ export function UsersDashboard({ users, currentUserId }: Props) {
     <>
       <AdminPageHeader
         title="Users"
-        description="Manage staff accounts, roles, and access to the dashboard."
+        description="Manage staff login accounts for the admin dashboard. For public About page profiles, use About team."
         actions={
           <Link href="/admin/users/new" className="admin-button-primary">
-            Add New
+            Add user
           </Link>
         }
       />

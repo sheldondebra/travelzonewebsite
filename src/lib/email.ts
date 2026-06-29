@@ -54,6 +54,40 @@ export async function sendTestEmail(to: string) {
   });
 }
 
+export async function sendContactMessageReplyEmail(params: {
+  message: {
+    id: string;
+    fullName: string;
+    email: string;
+    subject: ContactSubject;
+    message: string;
+  };
+  reply: string;
+}) {
+  const { message, reply } = params;
+  const subjectLabel = getContactSubjectLabel(message.subject);
+
+  const text = `Hi ${message.fullName},
+
+${reply}
+
+---
+Regarding your message (ref ${message.id})
+Subject: ${subjectLabel}
+
+Your message:
+${message.message}
+
+Travel Zone Ghana
+#2 Boundary Road, East Legon, Accra`;
+
+  await sendEmail({
+    to: message.email,
+    subject: `Re: ${subjectLabel} — Travel Zone Ghana (${message.id})`,
+    text,
+  });
+}
+
 export async function sendBookingPaidEmails(booking: {
   id: string;
   fullName: string;

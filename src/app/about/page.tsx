@@ -12,6 +12,7 @@ import {
   AboutCta,
   AboutSustainability,
 } from "@/components/about/AboutSections";
+import { getPublishedAboutTeamMembers } from "@/lib/about-team-store";
 import { createMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createMetadata({
@@ -21,7 +22,9 @@ export const metadata: Metadata = createMetadata({
   path: "/about",
 });
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const teamMembers = await getPublishedAboutTeamMembers();
+
   return (
     <>
       <Header />
@@ -29,7 +32,7 @@ export default function AboutPage() {
         <AboutHero />
         <AboutStats />
         <AboutStory />
-        <AboutTeam />
+        <AboutTeam members={teamMembers} />
         <AboutServices />
         <AboutDestinations />
         <AboutGallery />

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ContactMessageReplyForm } from "@/components/admin/ContactMessageReplyForm";
 import { ContactMessageStatusForm } from "@/components/admin/ContactMessageStatusForm";
 import { AdminPageHeader, AdminWidget } from "@/components/admin/AdminChrome";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { formatContactMessageDateTime } from "@/lib/contact-admin";
 import { getContactSubjectLabel } from "@/lib/contact-messages";
 import { getContactMessageById } from "@/lib/contact-messages-store";
+import { getSmtpConfig, getSplitSmsConfig } from "@/lib/site-settings";
 import { getStaffUser } from "@/lib/supabase/auth";
 
 type Props = {
@@ -17,7 +19,11 @@ export default async function AdminMessageDetailPage({ params }: Props) {
   const message = await getContactMessageById(id);
   if (!message) notFound();
 
-  const staff = await getStaffUser();
+  const [staff, smtp, sms] = await Promise.all([
+    getStaffUser(),
+    getSmtpConfig(),
+    getSplitSmsConfig(),
+  ]);
 
   return (
     <>
@@ -62,14 +68,26 @@ export default async function AdminMessageDetailPage({ params }: Props) {
           </table>
         </AdminWidget>
 
-        {staff?.role === "admin" ? (
-          <AdminWidget title="Update status">
-            <ContactMessageStatusForm
+        <div className="space-y-4">
+          <AdminWidget title="Reply to customer">
+            <ContactMessageReplyForm
               messageId={message.id}
-              currentStatus={message.status}
+              recipientEmail={message.email}
+              recipientPhone={message.phone}
+              emailReady={Boolean(smtp)}
+              smsReady={Boolean(sms)}
             />
           </AdminWidget>
-        ) : null}
+
+          {staff?.role === "admin" ? (
+            <AdminWidget title="Update status">
+              <ContactMessageStatusForm
+                messageId={message.id}
+                currentStatus={message.status}
+              />
+            </AdminWidget>
+          ) : null}
+        </div>
       </div>
     </>
   );

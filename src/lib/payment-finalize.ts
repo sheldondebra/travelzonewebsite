@@ -5,7 +5,12 @@ import {
 } from "@/lib/bookings-store";
 import { sendBookingPaidEmails } from "@/lib/email";
 import { notifyBookingPayment } from "@/lib/splitsms";
-import { pesewasToGhs, verifyPaystackTransaction } from "@/lib/paystack";
+import { ghsToPesewas, pesewasToGhs, verifyPaystackTransaction } from "@/lib/paystack";
+
+function amountsMatch(expectedGhs: number, paidPesewas: number) {
+  const expectedPesewas = ghsToPesewas(expectedGhs);
+  return Math.abs(expectedPesewas - paidPesewas) <= 1;
+}
 
 export async function finalizeSuccessfulPayment(reference: string) {
   const verified = await verifyPaystackTransaction(reference);
@@ -38,6 +43,12 @@ export async function finalizeSuccessfulPayment(reference: string) {
 
   if (booking.paymentStatus === "paid") {
     return { paid: true as const, bookingId: booking.id, alreadyPaid: true };
+  }
+
+  if (!amountsMatch(booking.estimatedTotal, verified.amount)) {
+    booking.paymentStatus = "failed";
+    await saveBooking(booking);
+    throw new Error("Payment amount does not match the booking total.");
   }
 
   const paidAmountGhs = pesewasToGhs(verified.amount);

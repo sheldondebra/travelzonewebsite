@@ -4,6 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 
 export type StaffRole = "admin" | "editor";
 
+function roleFromJwt(appMetadata: Record<string, unknown> | undefined): StaffRole | null {
+  const role = appMetadata?.role;
+  if (role === "admin" || role === "editor") return role;
+  return null;
+}
+
 export async function getStaffUser() {
   if (!isSupabaseConfigured()) return null;
 
@@ -13,8 +19,22 @@ export async function getStaffUser() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const role = user.app_metadata?.role as StaffRole | undefined;
-  if (role !== "admin" && role !== "editor") return null;
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role, is_active")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile) {
+    if (!profile.is_active) return null;
+    if (profile.role === "admin" || profile.role === "editor") {
+      return { user, role: profile.role as StaffRole };
+    }
+    return null;
+  }
+
+  const role = roleFromJwt(user.app_metadata);
+  if (!role) return null;
 
   return { user, role };
 }

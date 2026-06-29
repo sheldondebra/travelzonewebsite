@@ -25,7 +25,7 @@ export default async function PaymentVerifyPage({ searchParams }: Props) {
   try {
     const result = await finalizeSuccessfulPayment(reference);
     if (result.paid) {
-      redirect(`/booking/confirmation?ref=${result.bookingId}&reference=${reference}&paid=1`);
+      redirect(`/booking/confirmation?reference=${encodeURIComponent(reference)}&paid=1`);
     }
     redirect(`/booking/confirmation?reference=${reference}&paid=0`);
   } catch {

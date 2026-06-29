@@ -74,3 +74,11 @@ export function UsersIcon({ className = "h-5 w-5" }: IconProps) {
     </svg>
   );
 }
+
+export function AboutIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+      <path d="M10 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm-6 14a6 6 0 0 1 12 0H4Z" />
+    </svg>
+  );
+}

@@ -46,11 +46,11 @@ export function SplitSmsBalancePanel({ initialBalance, initialError }: Props) {
   }
 
   return (
-    <div className="rounded-[3px] border border-parchment bg-[#f6f7f7] p-4">
+    <div className="admin-settings-balance">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-[13px] font-semibold text-[#1d2327]">Account balance</h3>
-          <p className="mt-0.5 text-xs text-text-muted">Wallet and SMS credits from SplitSMS</p>
+          <p className="admin-field-hint mt-0.5">Wallet and SMS credits from SplitSMS</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {balance ? (
@@ -77,21 +77,13 @@ export function SplitSmsBalancePanel({ initialBalance, initialError }: Props) {
 
       {balance ? (
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-              SMS credits
-            </dt>
-            <dd className="mt-1 text-2xl font-semibold text-[#1d2327]">
-              {balance.smsCredits.toLocaleString()}
-            </dd>
+          <div className="admin-settings-balance-stat">
+            <dt>SMS credits</dt>
+            <dd>{balance.smsCredits.toLocaleString()}</dd>
           </div>
-          <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-              Wallet
-            </dt>
-            <dd className="mt-1 text-2xl font-semibold text-[#1d2327]">
-              {formatWalletAmount(balance.walletBalance, balance.currency)}
-            </dd>
+          <div className="admin-settings-balance-stat">
+            <dt>Wallet</dt>
+            <dd>{formatWalletAmount(balance.walletBalance, balance.currency)}</dd>
           </div>
         </dl>
       ) : (

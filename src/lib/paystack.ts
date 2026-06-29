@@ -99,7 +99,15 @@ export async function verifyPaystackWebhookSignature(rawBody: string, signature:
   const secret = await getPaystackSecretKey();
   if (!secret || !signature) return false;
 
-  const { createHmac } = await import("crypto");
+  const { createHmac, timingSafeEqual } = await import("crypto");
   const hash = createHmac("sha512", secret).update(rawBody).digest("hex");
-  return hash === signature;
+
+  try {
+    const expected = Buffer.from(hash, "utf8");
+    const received = Buffer.from(signature, "utf8");
+    if (expected.length !== received.length) return false;
+    return timingSafeEqual(expected, received);
+  } catch {
+    return false;
+  }
 }

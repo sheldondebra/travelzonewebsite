@@ -13,11 +13,7 @@ type Props = {
 
 export function RichTextEditor({ value, onChange }: Props) {
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Link.configure({ openOnClick: false }),
-      Image,
-    ],
+    extensions: [StarterKit, Link.configure({ openOnClick: false }), Image],
     content: value,
     immediatelyRender: false,
     onUpdate: ({ editor: current }) => {
@@ -26,7 +22,7 @@ export function RichTextEditor({ value, onChange }: Props) {
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm max-w-none min-h-[280px] px-4 py-3 focus:outline-none",
+          "prose prose-sm max-w-none min-h-[280px] px-4 py-3 text-[#1d2327] focus:outline-none",
       },
     },
   });
@@ -37,11 +33,17 @@ export function RichTextEditor({ value, onChange }: Props) {
     }
   }, [editor, value]);
 
-  if (!editor) return null;
+  if (!editor) {
+    return (
+      <div className="admin-rich-editor admin-rich-editor-loading">
+        Loading editor…
+      </div>
+    );
+  }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-parchment bg-white">
-      <div className="flex flex-wrap gap-2 border-b border-parchment bg-cream/60 px-3 py-2">
+    <div className="admin-rich-editor">
+      <div className="admin-rich-editor-toolbar">
         <ToolbarButton
           active={editor.isActive("bold")}
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -56,6 +58,11 @@ export function RichTextEditor({ value, onChange }: Props) {
           active={editor.isActive("heading", { level: 2 })}
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           label="H2"
+        />
+        <ToolbarButton
+          active={editor.isActive("heading", { level: 3 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          label="H3"
         />
         <ToolbarButton
           active={editor.isActive("bulletList")}
@@ -90,11 +97,7 @@ function ToolbarButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded px-2.5 py-1 text-xs font-semibold ${
-        active
-          ? "bg-brand-red text-white"
-          : "bg-white text-navy hover:bg-parchment"
-      }`}
+      className={`admin-rich-editor-btn${active ? " admin-rich-editor-btn-active" : ""}`}
     >
       {label}
     </button>

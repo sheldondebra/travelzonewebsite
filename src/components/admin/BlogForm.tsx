@@ -1,32 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { saveBlogPostAction } from "@/app/admin/actions/blog";
 import { AdminNotice, AdminWidget } from "@/components/admin/AdminChrome";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import type { AdminBlogPost, ContentStatus } from "@/lib/content-types";
+import { slugify } from "@/lib/slugify";
 
 type Props = {
   post?: AdminBlogPost;
 };
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+function defaultDisplayDate() {
+  return new Date().toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function hasDisplayOptions(readTime: string, date: string, baselineDate: string) {
+  return Boolean(
+    (readTime.trim() && readTime !== "5 min read") ||
+      (date.trim() && date !== baselineDate),
+  );
 }
 
 export function BlogForm({ post }: Props) {
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const isNew = !post;
+  const baselineDate = useMemo(() => defaultDisplayDate(), []);
+  const [state, formAction, pending] = useActionState(saveBlogPostAction, undefined);
 
   const [title, setTitle] = useState(post?.title ?? "");
-  const [slug, setSlug] = useState(post?.slug ?? "");
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
   const [bodyHtml, setBodyHtml] = useState(
     post?.bodyHtml ?? post?.content?.map((p) => `<p>${p}</p>`).join("") ?? "",
@@ -34,36 +42,30 @@ export function BlogForm({ post }: Props) {
   const [image, setImage] = useState(post?.image ?? "");
   const [category, setCategory] = useState(post?.category ?? "");
   const [readTime, setReadTime] = useState(post?.readTime ?? "5 min read");
-  const [date, setDate] = useState(
-    post?.date ??
-      new Date().toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }),
-  );
+  const [date, setDate] = useState(post?.date ?? baselineDate);
   const [status, setStatus] = useState<ContentStatus>(post?.status ?? "draft");
+  const [showDisplayOptions, setShowDisplayOptions] = useState(() =>
+    isNew
+      ? false
+      : hasDisplayOptions(post?.readTime ?? "5 min read", post?.date ?? baselineDate, baselineDate),
+  );
 
-  const uploadFolder = useMemo(() => `blog/${slug || "draft"}`, [slug]);
+  const slug = useMemo(() => slugify(title) || "post", [title]);
+  const uploadFolder = useMemo(() => `blog/${slug}`, [slug]);
 
   return (
-    <form
-      action={(formData) => {
-        setError(null);
-        startTransition(async () => {
-          const result = await saveBlogPostAction(formData);
-          if (result && !result.success) setError(result.error);
-        });
-      }}
-      className="admin-editor-layout"
-    >
+    <form action={formAction} className="admin-editor-layout admin-tour-form">
       {post?.id ? <input type="hidden" name="id" value={post.id} /> : null}
+      <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="bodyHtml" value={bodyHtml} />
+      <input type="hidden" name="image" value={image} />
 
-      <div className="admin-editor-main space-y-5">
-        {error ? <AdminNotice variant="error">{error}</AdminNotice> : null}
+      <div className="admin-editor-main space-y-4">
+        {state && !state.success ? (
+          <AdminNotice variant="error">{state.error}</AdminNotice>
+        ) : null}
 
-        <AdminWidget title="Post details">
+        <AdminWidget title="Basics">
           <div className="space-y-4">
             <div>
               <label htmlFor="title" className="admin-label">
@@ -73,61 +75,30 @@ export function BlogForm({ post }: Props) {
                 id="title"
                 name="title"
                 value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  if (!post) setSlug(slugify(e.target.value));
-                }}
+                onChange={(event) => setTitle(event.target.value)}
                 required
-                className="admin-input"
+                autoFocus={isNew}
+                placeholder="Best time to visit Cape Coast Castle"
+                className="admin-input admin-input-title"
               />
-            </div>
-
-            <div>
-              <label htmlFor="slug" className="admin-label">
-                Slug
-              </label>
-              <input
-                id="slug"
-                name="slug"
-                value={slug}
-                onChange={(e) => setSlug(slugify(e.target.value))}
-                required
-                className="admin-input"
-              />
+              <p className="admin-field-hint">travelzonegh.com/blog/{slug}</p>
             </div>
 
             <div>
               <label htmlFor="excerpt" className="admin-label">
-                Excerpt
+                Summary
               </label>
               <textarea
                 id="excerpt"
                 name="excerpt"
                 rows={3}
                 value={excerpt}
-                onChange={(e) => setExcerpt(e.target.value)}
+                onChange={(event) => setExcerpt(event.target.value)}
+                placeholder="A short teaser for cards and search results"
                 className="admin-input"
               />
             </div>
-          </div>
-        </AdminWidget>
 
-        <AdminWidget title="Content">
-          <RichTextEditor value={bodyHtml} onChange={setBodyHtml} />
-        </AdminWidget>
-
-        <AdminWidget title="Featured image">
-          <ImageUpload
-            label="Featured image"
-            value={image}
-            folder={uploadFolder}
-            onChange={setImage}
-          />
-          <input type="hidden" name="image" value={image} />
-        </AdminWidget>
-
-        <AdminWidget title="Meta">
-          <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label htmlFor="category" className="admin-label">
                 Category
@@ -136,84 +107,139 @@ export function BlogForm({ post }: Props) {
                 id="category"
                 name="category"
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="admin-input"
-              />
-            </div>
-            <div>
-              <label htmlFor="readTime" className="admin-label">
-                Read time
-              </label>
-              <input
-                id="readTime"
-                name="readTime"
-                value={readTime}
-                onChange={(e) => setReadTime(e.target.value)}
-                className="admin-input"
-              />
-            </div>
-            <div>
-              <label htmlFor="date" className="admin-label">
-                Display date
-              </label>
-              <input
-                id="date"
-                name="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={(event) => setCategory(event.target.value)}
+                placeholder="Travel tips"
                 className="admin-input"
               />
             </div>
           </div>
         </AdminWidget>
+
+        <AdminWidget title="Content">
+          <p className="admin-field-hint mb-3 mt-0">
+            Write the full article. Use headings and lists to break up long sections.
+          </p>
+          <RichTextEditor value={bodyHtml} onChange={setBodyHtml} />
+        </AdminWidget>
+
+        <AdminWidget title="Cover photo">
+          <ImageUpload
+            label="Featured image"
+            value={image}
+            folder={uploadFolder}
+            onChange={setImage}
+          />
+        </AdminWidget>
+
+        {!showDisplayOptions ? (
+          <button
+            type="button"
+            className="admin-tour-extras-toggle"
+            onClick={() => setShowDisplayOptions(true)}
+          >
+            + Adjust read time & display date (optional)
+          </button>
+        ) : (
+          <AdminWidget title="Display options">
+            <div className="admin-form-grid-2">
+              <div>
+                <label htmlFor="readTime" className="admin-label">
+                  Read time
+                </label>
+                <input
+                  id="readTime"
+                  name="readTime"
+                  value={readTime}
+                  onChange={(event) => setReadTime(event.target.value)}
+                  placeholder="5 min read"
+                  className="admin-input"
+                />
+              </div>
+              <div>
+                <label htmlFor="date" className="admin-label">
+                  Display date
+                </label>
+                <input
+                  id="date"
+                  name="date"
+                  value={date}
+                  onChange={(event) => setDate(event.target.value)}
+                  placeholder={baselineDate}
+                  className="admin-input"
+                />
+                <p className="admin-field-hint">Shown on the blog card and post header</p>
+              </div>
+            </div>
+          </AdminWidget>
+        )}
+
+        {!showDisplayOptions ? (
+          <>
+            <input type="hidden" name="readTime" value={readTime} />
+            <input type="hidden" name="date" value={date} />
+          </>
+        ) : null}
       </div>
 
-      <div className="admin-editor-sidebar space-y-5">
-        <AdminWidget title="Publish">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[13px] text-[#646970]">Status</span>
-              <StatusBadge status={status} />
-            </div>
+      <div className="admin-editor-sidebar">
+        <div className="admin-tour-sidebar-sticky space-y-4">
+          <AdminWidget title="Publish">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] text-[#646970]">Status</span>
+                <StatusBadge status={status} />
+              </div>
 
-            <div>
-              <label htmlFor="status" className="admin-label">
-                Visibility
-              </label>
-              <select
-                id="status"
-                name="status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as ContentStatus)}
-                className="admin-input"
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-              </select>
-            </div>
-
-            <div className="flex flex-wrap gap-2 border-t border-[#f0f0f1] pt-3">
-              <button type="submit" disabled={pending} className="admin-button-primary">
-                {pending
-                  ? "Saving…"
-                  : status === "published"
-                    ? post
-                      ? "Update"
-                      : "Publish"
-                    : "Save draft"}
-              </button>
-              {post && status === "published" && slug ? (
-                <Link
-                  href={`/blog/${slug}`}
-                  target="_blank"
-                  className="admin-button-secondary"
+              <div>
+                <label htmlFor="status" className="admin-label">
+                  Visibility
+                </label>
+                <select
+                  id="status"
+                  name="status"
+                  value={status}
+                  onChange={(event) => setStatus(event.target.value as ContentStatus)}
+                  className="admin-input"
                 >
-                  Preview
-                </Link>
+                  <option value="draft">Draft — hidden from site</option>
+                  <option value="published">Published — live on site</option>
+                </select>
+              </div>
+
+              {isNew ? (
+                <p className="admin-field-hint m-0">
+                  Save as draft first if you want to review before going live.
+                </p>
               ) : null}
+
+              <div className="flex flex-col gap-2 border-t border-[#f0f0f1] pt-3">
+                <button type="submit" disabled={pending} className="admin-login-submit">
+                  {pending
+                    ? "Saving…"
+                    : status === "published"
+                      ? post
+                        ? "Update post"
+                        : "Publish post"
+                      : isNew
+                        ? "Save draft"
+                        : "Save changes"}
+                </button>
+                {post && status === "published" && slug ? (
+                  <Link
+                    href={`/blog/${slug}`}
+                    target="_blank"
+                    className="admin-button-secondary justify-center"
+                  >
+                    Preview live page
+                  </Link>
+                ) : null}
+                <Link href="/admin/blog" className="admin-button-secondary justify-center">
+                  Cancel
+                </Link>
+              </div>
             </div>
-          </div>
-        </AdminWidget>
+          </AdminWidget>
+        </div>
       </div>
     </form>
   );

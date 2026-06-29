@@ -29,9 +29,11 @@ type CreateMetadataOptions = {
   path?: string;
   ogImage?: string;
   noIndex?: boolean;
+  canonical?: boolean;
   type?: "website" | "article";
   publishedTime?: string;
   modifiedTime?: string;
+  authors?: string[];
 };
 
 export function createMetadata({
@@ -40,9 +42,11 @@ export function createMetadata({
   path = "/",
   ogImage = siteConfig.defaultOgImage,
   noIndex = false,
+  canonical = true,
   type = "website",
   publishedTime,
   modifiedTime,
+  authors,
 }: CreateMetadataOptions): Metadata {
   const url = absoluteUrl(path);
   const imageUrl = ogImage.startsWith("http") ? ogImage : absoluteUrl(ogImage);
@@ -50,9 +54,7 @@ export function createMetadata({
   return {
     title,
     description,
-    alternates: {
-      canonical: url,
-    },
+    ...(canonical ? { alternates: { canonical: url } } : {}),
     robots: noIndex
       ? { index: false, follow: false }
       : { index: true, follow: true },
@@ -63,8 +65,12 @@ export function createMetadata({
       siteName: siteConfig.name,
       locale: siteConfig.locale,
       type,
-      ...(type === "article" && publishedTime
-        ? { publishedTime, ...(modifiedTime ? { modifiedTime } : {}) }
+      ...(type === "article"
+        ? {
+            ...(publishedTime ? { publishedTime } : {}),
+            ...(modifiedTime ? { modifiedTime } : {}),
+            ...(authors?.length ? { authors } : {}),
+          }
         : {}),
       images: [
         {
@@ -80,6 +86,7 @@ export function createMetadata({
       title,
       description,
       images: [imageUrl],
+      site: siteConfig.twitterHandle,
       creator: siteConfig.twitterHandle,
     },
   };

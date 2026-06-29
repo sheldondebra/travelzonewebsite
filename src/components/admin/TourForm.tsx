@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { saveTourAction } from "@/app/admin/actions/tours";
 import { AdminNotice, AdminWidget } from "@/components/admin/AdminChrome";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 import { MediaLibrary } from "@/components/admin/MediaLibrary";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import type { AdminTour, ContentStatus } from "@/lib/content-types";
@@ -31,9 +32,17 @@ function collectLibraryImages(tour?: AdminTour) {
   return Array.from(urls);
 }
 
+function hasExtrasContent(
+  highlights: string,
+  included: string,
+  overview: string,
+) {
+  return Boolean(highlights.trim() || included.trim() || overview.trim());
+}
+
 export function TourForm({ tour }: Props) {
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const isNew = !tour;
+  const [state, formAction, pending] = useActionState(saveTourAction, undefined);
 
   const [title, setTitle] = useState(tour?.title ?? "");
   const [tagline, setTagline] = useState(tour?.tagline ?? "");
@@ -43,7 +52,9 @@ export function TourForm({ tour }: Props) {
   const [currency, setCurrency] = useState<"USD" | "GHS">(
     tour?.currency ?? "USD",
   );
-  const [priceNote, setPriceNote] = useState(tour?.priceNote ?? "");
+  const [priceNote, setPriceNote] = useState(
+    tour?.priceNote ?? "per person (double sharing)",
+  );
   const [travelPeriod, setTravelPeriod] = useState(tour?.travelPeriod ?? "");
   const [description, setDescription] = useState(tour?.description ?? "");
   const [highlightsText, setHighlightsText] = useState(
@@ -55,7 +66,7 @@ export function TourForm({ tour }: Props) {
   const [overviewText, setOverviewText] = useState(
     arrayToLines(tour?.overview ?? []),
   );
-  const [category, setCategory] = useState(tour?.category ?? "");
+  const [category, setCategory] = useState(tour?.category ?? "International");
   const [status, setStatus] = useState<ContentStatus>(
     tour?.status ?? "draft",
   );
@@ -64,22 +75,34 @@ export function TourForm({ tour }: Props) {
   const [libraryImages, setLibraryImages] = useState<string[]>(() =>
     collectLibraryImages(tour),
   );
+  const [showGallery, setShowGallery] = useState(
+    () => !isNew && (tour?.gallery?.length ?? 0) > 0,
+  );
+  const [showExtras, setShowExtras] = useState(() =>
+    isNew
+      ? false
+      : hasExtrasContent(
+          arrayToLines(tour?.highlights ?? []),
+          arrayToLines(tour?.included ?? []),
+          arrayToLines(tour?.overview ?? []),
+        ),
+  );
 
   const slug = useMemo(() => slugify(title) || "tour", [title]);
   const uploadFolder = useMemo(() => `tours/${slug}`, [slug]);
 
-  function handleSubmit(formData: FormData) {
-    setError(null);
-    startTransition(async () => {
-      const result = await saveTourAction(formData);
-      if (result && !result.success) {
-        setError(result.error);
-      }
-    });
+  function handleFeaturedChange(url: string) {
+    setFeaturedImage(url);
+    if (!url) return;
+
+    setLibraryImages((current) =>
+      current.includes(url) ? current : [url, ...current],
+    );
+    setGallery((current) => (current.includes(url) ? current : [url, ...current]));
   }
 
   return (
-    <form action={handleSubmit} className="admin-editor-layout">
+    <form action={formAction} className="admin-editor-layout admin-tour-form">
       {tour?.id ? <input type="hidden" name="id" value={tour.id} /> : null}
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="image" value={featuredImage} />
@@ -100,11 +123,13 @@ export function TourForm({ tour }: Props) {
         value={JSON.stringify(linesToArray(includedText))}
       />
 
-      <div className="admin-editor-main space-y-5">
-        {error ? <AdminNotice variant="error">{error}</AdminNotice> : null}
+      <div className="admin-editor-main space-y-4">
+        {state && !state.success ? (
+          <AdminNotice variant="error">{state.error}</AdminNotice>
+        ) : null}
 
-        <div className="admin-postbox">
-          <div className="admin-postbox-body space-y-4">
+        <AdminWidget title="Basics">
+          <div className="space-y-4">
             <div>
               <label htmlFor="title" className="admin-label">
                 Tour name
@@ -115,12 +140,11 @@ export function TourForm({ tour }: Props) {
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 required
-                placeholder="e.g. Dubai Summer Getaway"
+                autoFocus={isNew}
+                placeholder="Dubai Summer Getaway"
                 className="admin-input admin-input-title"
               />
-              <p className="mt-1 text-[12px] text-[#646970]">
-                Link: /tours/{slug}
-              </p>
+              <p className="admin-field-hint">travelzonegh.com/tours/{slug}</p>
             </div>
 
             <div>
@@ -132,14 +156,14 @@ export function TourForm({ tour }: Props) {
                 name="tagline"
                 value={tagline}
                 onChange={(event) => setTagline(event.target.value)}
-                placeholder="Short hook shown on tour cards"
+                placeholder="A short hook for cards and the tour page"
                 className="admin-input"
               />
             </div>
 
             <div>
               <label htmlFor="description" className="admin-label">
-                Description
+                Summary
               </label>
               <textarea
                 id="description"
@@ -147,27 +171,15 @@ export function TourForm({ tour }: Props) {
                 rows={3}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder="Brief summary for the tour page"
+                placeholder="What makes this package worth booking?"
                 className="admin-input"
               />
             </div>
           </div>
-        </div>
-
-        <AdminWidget title="Photos">
-          <MediaLibrary
-            folder={uploadFolder}
-            images={libraryImages}
-            onImagesChange={setLibraryImages}
-            featuredImage={featuredImage}
-            onFeaturedChange={setFeaturedImage}
-            gallery={gallery}
-            onGalleryChange={setGallery}
-          />
         </AdminWidget>
 
-        <AdminWidget title="Trip details">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <AdminWidget title="Trip & pricing">
+          <div className="admin-form-grid-2">
             <div>
               <label htmlFor="location" className="admin-label">
                 Location
@@ -177,7 +189,7 @@ export function TourForm({ tour }: Props) {
                 name="location"
                 value={location}
                 onChange={(event) => setLocation(event.target.value)}
-                placeholder="e.g. Dubai, UAE"
+                placeholder="Dubai, UAE"
                 className="admin-input"
               />
             </div>
@@ -190,7 +202,7 @@ export function TourForm({ tour }: Props) {
                 name="duration"
                 value={duration}
                 onChange={(event) => setDuration(event.target.value)}
-                placeholder="e.g. 5 days / 4 nights"
+                placeholder="4 nights / 5 days"
                 className="admin-input"
               />
             </div>
@@ -203,7 +215,7 @@ export function TourForm({ tour }: Props) {
                 name="category"
                 value={category}
                 onChange={(event) => setCategory(event.target.value)}
-                placeholder="e.g. International"
+                placeholder="International"
                 className="admin-input"
               />
             </div>
@@ -216,15 +228,13 @@ export function TourForm({ tour }: Props) {
                 name="travelPeriod"
                 value={travelPeriod}
                 onChange={(event) => setTravelPeriod(event.target.value)}
-                placeholder="e.g. June – August 2026"
+                placeholder="June – August 2026"
                 className="admin-input"
               />
             </div>
           </div>
-        </AdminWidget>
 
-        <AdminWidget title="Pricing">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="admin-form-price-row">
             <div>
               <label htmlFor="price" className="admin-label">
                 Price
@@ -238,7 +248,7 @@ export function TourForm({ tour }: Props) {
                 value={price}
                 onChange={(event) => setPrice(event.target.value)}
                 required
-                placeholder="0.00"
+                placeholder="1500"
                 className="admin-input"
               />
             </div>
@@ -259,7 +269,7 @@ export function TourForm({ tour }: Props) {
                 <option value="GHS">GHS</option>
               </select>
             </div>
-            <div>
+            <div className="sm:col-span-2">
               <label htmlFor="priceNote" className="admin-label">
                 Price note
               </label>
@@ -268,108 +278,171 @@ export function TourForm({ tour }: Props) {
                 name="priceNote"
                 value={priceNote}
                 onChange={(event) => setPriceNote(event.target.value)}
-                placeholder="e.g. per person sharing"
+                placeholder="per person (double sharing)"
                 className="admin-input"
               />
             </div>
           </div>
         </AdminWidget>
 
-        <AdminWidget title="Highlights">
-          <label htmlFor="highlights" className="admin-label">
-            One highlight per line
-          </label>
-          <textarea
-            id="highlights"
-            rows={4}
-            value={highlightsText}
-            onChange={(event) => setHighlightsText(event.target.value)}
-            placeholder={"Desert safari\nBurj Khalifa visit\nHotel breakfast included"}
-            className="admin-input"
+        <AdminWidget title="Cover photo">
+          <ImageUpload
+            label="Featured image"
+            value={featuredImage}
+            folder={uploadFolder}
+            onChange={handleFeaturedChange}
           />
+
+          {!showGallery ? (
+            <button
+              type="button"
+              className="admin-text-button mt-3"
+              onClick={() => setShowGallery(true)}
+            >
+              + Add gallery photos (optional)
+            </button>
+          ) : (
+            <div className="mt-4 border-t border-[#f0f0f1] pt-4">
+              <p className="admin-field-hint mb-3">
+                Optional extra photos for the tour page gallery.
+              </p>
+              <MediaLibrary
+                folder={uploadFolder}
+                images={libraryImages}
+                onImagesChange={setLibraryImages}
+                featuredImage={featuredImage}
+                onFeaturedChange={setFeaturedImage}
+                gallery={gallery}
+                onGalleryChange={setGallery}
+              />
+            </div>
+          )}
         </AdminWidget>
 
-        <AdminWidget title="Included">
-          <label htmlFor="included" className="admin-label">
-            One item per line
-          </label>
-          <textarea
-            id="included"
-            rows={4}
-            value={includedText}
-            onChange={(event) => setIncludedText(event.target.value)}
-            placeholder={"Return flights\n4-star hotel\nAirport transfers"}
-            className="admin-input"
-          />
-        </AdminWidget>
+        {!showExtras ? (
+          <button
+            type="button"
+            className="admin-tour-extras-toggle"
+            onClick={() => setShowExtras(true)}
+          >
+            + Add highlights, inclusions & overview (optional)
+          </button>
+        ) : (
+          <AdminWidget title="Page details">
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="highlights" className="admin-label">
+                  Highlights
+                </label>
+                <textarea
+                  id="highlights"
+                  rows={3}
+                  value={highlightsText}
+                  onChange={(event) => setHighlightsText(event.target.value)}
+                  placeholder={"Desert safari\nCity tour\nDaily breakfast"}
+                  className="admin-input"
+                />
+                <p className="admin-field-hint">One item per line</p>
+              </div>
 
-        <AdminWidget title="Overview">
-          <label htmlFor="overview" className="admin-label">
-            One paragraph per line
-          </label>
-          <textarea
-            id="overview"
-            rows={4}
-            value={overviewText}
-            onChange={(event) => setOverviewText(event.target.value)}
-            placeholder="Optional longer paragraphs for the tour page"
-            className="admin-input"
-          />
-        </AdminWidget>
+              <div>
+                <label htmlFor="included" className="admin-label">
+                  What&apos;s included
+                </label>
+                <textarea
+                  id="included"
+                  rows={3}
+                  value={includedText}
+                  onChange={(event) => setIncludedText(event.target.value)}
+                  placeholder={"Flights\nHotel\nAirport transfers"}
+                  className="admin-input"
+                />
+                <p className="admin-field-hint">One item per line</p>
+              </div>
+
+              <div>
+                <label htmlFor="overview" className="admin-label">
+                  Overview
+                </label>
+                <textarea
+                  id="overview"
+                  rows={3}
+                  value={overviewText}
+                  onChange={(event) => setOverviewText(event.target.value)}
+                  placeholder="Longer paragraphs for the tour page (one per line)"
+                  className="admin-input"
+                />
+              </div>
+            </div>
+          </AdminWidget>
+        )}
       </div>
 
-      <div className="admin-editor-sidebar space-y-5">
-        <AdminWidget title="Publish">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[13px] text-[#646970]">Status</span>
-              <StatusBadge status={status} />
-            </div>
+      <div className="admin-editor-sidebar">
+        <div className="admin-tour-sidebar-sticky space-y-4">
+          <AdminWidget title="Publish">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] text-[#646970]">Status</span>
+                <StatusBadge status={status} />
+              </div>
 
-            <div>
-              <label htmlFor="status" className="admin-label">
-                Visibility
-              </label>
-              <select
-                id="status"
-                name="status"
-                value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value as ContentStatus)
-                }
-                className="admin-input"
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-              </select>
-            </div>
-
-            <div className="flex flex-wrap gap-2 border-t border-[#f0f0f1] pt-3">
-              <button
-                type="submit"
-                disabled={pending}
-                className="admin-button-primary"
-              >
-                {pending
-                  ? "Saving…"
-                  : status === "published"
-                    ? tour
-                      ? "Update"
-                      : "Publish"
-                    : "Save draft"}
-              </button>
-              {tour && status === "published" && slug ? (
-                <Link
-                  href={`/tours/${slug}`}
-                  target="_blank"
-                  className="admin-button-secondary"
+              <div>
+                <label htmlFor="status" className="admin-label">
+                  Visibility
+                </label>
+                <select
+                  id="status"
+                  name="status"
+                  value={status}
+                  onChange={(event) =>
+                    setStatus(event.target.value as ContentStatus)
+                  }
+                  className="admin-input"
                 >
-                  Preview
-                </Link>
+                  <option value="draft">Draft — hidden from site</option>
+                  <option value="published">Published — live on site</option>
+                </select>
+              </div>
+
+              {isNew ? (
+                <p className="admin-field-hint m-0">
+                  Save as draft first if you want to review before going live.
+                </p>
               ) : null}
+
+              <div className="flex flex-col gap-2 border-t border-[#f0f0f1] pt-3">
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="admin-login-submit"
+                >
+                  {pending
+                    ? "Saving…"
+                    : status === "published"
+                      ? tour
+                        ? "Update tour"
+                        : "Publish tour"
+                      : isNew
+                        ? "Save draft"
+                        : "Save changes"}
+                </button>
+                {tour && status === "published" && slug ? (
+                  <Link
+                    href={`/tours/${slug}`}
+                    target="_blank"
+                    className="admin-button-secondary justify-center"
+                  >
+                    Preview live page
+                  </Link>
+                ) : null}
+                <Link href="/admin/tours" className="admin-button-secondary justify-center">
+                  Cancel
+                </Link>
+              </div>
             </div>
-          </div>
-        </AdminWidget>
+          </AdminWidget>
+        </div>
       </div>
     </form>
   );

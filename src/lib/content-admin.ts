@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { databaseSetupError, isMissingTableError } from "@/lib/supabase/db-errors";
 import type { Tour } from "@/lib/tours";
 import { htmlToParagraphs } from "@/lib/content-public";
+import { normalizeMediaUrl, normalizeMediaUrls } from "@/lib/media-url";
+import { sanitizeBlogHtml } from "@/lib/sanitize-html";
 import type {
   AdminBlogPost,
   AdminTour,
@@ -26,8 +28,8 @@ function rowToTour(row: Record<string, unknown>): Tour {
     currency: (row.currency as "USD" | "GHS") ?? "USD",
     priceNote: (row.price_note as string) ?? "",
     travelPeriod: (row.travel_period as string) ?? "",
-    image: (row.image as string) ?? "",
-    gallery: asStringArray(row.gallery),
+    image: normalizeMediaUrl((row.image as string) ?? ""),
+    gallery: normalizeMediaUrls(asStringArray(row.gallery)),
     description: (row.description as string) ?? "",
     overview: asStringArray(row.overview),
     highlights: asStringArray(row.highlights),
@@ -46,14 +48,14 @@ function rowToAdminTour(row: Record<string, unknown>): AdminTour {
 }
 
 function rowToAdminBlogPost(row: Record<string, unknown>): AdminBlogPost {
-  const bodyHtml = (row.body_html as string) ?? "";
+  const bodyHtml = sanitizeBlogHtml((row.body_html as string) ?? "");
   return {
     slug: row.slug as string,
     title: row.title as string,
     excerpt: (row.excerpt as string) ?? "",
     bodyHtml,
     content: htmlToParagraphs(bodyHtml),
-    image: (row.image as string) ?? "",
+    image: normalizeMediaUrl((row.image as string) ?? ""),
     date: (row.display_date as string) ?? "",
     category: (row.category as string) ?? "",
     readTime: (row.read_time as string) ?? "5 min read",
@@ -272,12 +274,27 @@ export async function deleteBlogPost(id: string) {
   }
 }
 
+export async function updateBlogPostStatus(id: string, status: ContentStatus) {
+  const supabase = await createClient();
+  const payload: { status: ContentStatus; published_at?: string } = { status };
+
+  if (status === "published") {
+    payload.published_at = new Date().toISOString();
+  }
+
+  const { error } = await supabase.from("blog_posts").update(payload).eq("id", id);
+  if (error) {
+    if (isMissingTableError(error)) throw databaseSetupError();
+    throw new Error(error.message);
+  }
+}
+
 export async function getDashboardStats() {
   const supabase = await createClient();
 
   async function count(
     table: string,
-    filter?: { column: string; value: string },
+    filter?: { column: string; value: string | number | boolean },
   ) {
     let query = supabase.from(table).select("id", { count: "exact", head: true });
     if (filter) query = query.eq(filter.column, filter.value);
@@ -289,14 +306,24 @@ export async function getDashboardStats() {
     return total ?? 0;
   }
 
-  const [publishedTours, publishedPosts, pendingBookings, pendingConsultations, pendingMessages, subscribers] =
-    await Promise.all([
+  const [
+    publishedTours,
+    publishedPosts,
+    pendingBookings,
+    pendingConsultations,
+    pendingMessages,
+    subscribers,
+    staffUsers,
+    aboutTeamMembers,
+  ] = await Promise.all([
       count("tours", { column: "status", value: "published" }),
       count("blog_posts", { column: "status", value: "published" }),
       count("tour_bookings", { column: "status", value: "pending" }),
       count("consultation_bookings", { column: "status", value: "pending" }),
       count("contact_messages", { column: "status", value: "pending" }),
       count("newsletter_subscribers"),
+      count("users", { column: "is_active", value: true }),
+      count("about_team_members", { column: "status", value: "published" }),
     ]);
 
   return {
@@ -306,5 +333,7 @@ export async function getDashboardStats() {
     pendingConsultations,
     pendingMessages,
     subscribers,
+    staffUsers,
+    aboutTeamMembers,
   };
 }

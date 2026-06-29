@@ -22,6 +22,7 @@ import {
   type ConsultationTimeSlot,
   type ConsultationTopic,
 } from "@/lib/consultations";
+import type { ConsultationAvailabilitySettings } from "@/lib/settings-types";
 import { formatShortDate, getLocalTodayIso } from "@/lib/date-utils";
 
 type Step = "schedule" | "details" | "review";
@@ -40,7 +41,6 @@ type FormFields = {
 type FieldErrors = Partial<Record<keyof FormFields, string>>;
 
 const minDate = getLocalTodayIso();
-const defaultDate = getNextAvailableConsultationDate();
 
 const steps: { id: Step; label: string }[] = [
   { id: "schedule", label: "Schedule" },
@@ -59,20 +59,23 @@ function fieldClass(hasError: boolean) {
   }`;
 }
 
-function validateSchedule(fields: FormFields): FieldErrors {
+function validateSchedule(
+  fields: FormFields,
+  availability: ConsultationAvailabilitySettings,
+): FieldErrors {
   const errors: FieldErrors = {};
 
   if (!fields.preferredDate) {
     errors.preferredDate = "Please select a date.";
-  } else if (!isConsultationDateSelectable(fields.preferredDate, minDate)) {
-    errors.preferredDate = "Choose a weekday or Saturday — we are closed on Sundays.";
+  } else if (!isConsultationDateSelectable(fields.preferredDate, availability, minDate)) {
+    errors.preferredDate = "That date is not available. Choose another day.";
   }
 
   if (!fields.preferredTime) {
     errors.preferredTime = "Please select a time slot.";
   } else if (
     fields.preferredDate &&
-    getAvailableTimeSlots(fields.preferredDate).every(
+    getAvailableTimeSlots(fields.preferredDate, availability).every(
       (slot) => slot.value !== fields.preferredTime,
     )
   ) {
@@ -114,7 +117,12 @@ function validateDetails(fields: FormFields): FieldErrors {
   return errors;
 }
 
-export function BookConsultationForm() {
+export function BookConsultationForm({
+  availability,
+}: {
+  availability: ConsultationAvailabilitySettings;
+}) {
+  const defaultDate = getNextAvailableConsultationDate(availability);
   const [step, setStep] = useState<Step>("schedule");
   const [fields, setFields] = useState<FormFields>({
     fullName: "",
@@ -132,8 +140,8 @@ export function BookConsultationForm() {
   const [bookingId, setBookingId] = useState<string | null>(null);
 
   const availableTimeSlots = useMemo(
-    () => getAvailableTimeSlots(fields.preferredDate),
-    [fields.preferredDate],
+    () => getAvailableTimeSlots(fields.preferredDate, availability),
+    [availability, fields.preferredDate],
   );
 
   const stepIndex = steps.findIndex((item) => item.id === step);
@@ -143,7 +151,7 @@ export function BookConsultationForm() {
       const next = { ...prev, [key]: value };
 
       if (key === "preferredDate") {
-        const slots = getAvailableTimeSlots(String(value));
+        const slots = getAvailableTimeSlots(String(value), availability);
         if (
           prev.preferredTime &&
           !slots.some((slot) => slot.value === prev.preferredTime)
@@ -171,7 +179,7 @@ export function BookConsultationForm() {
   }
 
   function handleContinueFromSchedule() {
-    const errors = validateSchedule(fields);
+    const errors = validateSchedule(fields, availability);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
@@ -181,7 +189,7 @@ export function BookConsultationForm() {
   }
 
   function handleContinueFromDetails() {
-    const scheduleErrors = validateSchedule(fields);
+    const scheduleErrors = validateSchedule(fields, availability);
     const detailErrors = validateDetails(fields);
     const errors = { ...scheduleErrors, ...detailErrors };
     if (Object.keys(errors).length > 0) {
@@ -196,7 +204,7 @@ export function BookConsultationForm() {
     setError("");
 
     const errors = {
-      ...validateSchedule(fields),
+      ...validateSchedule(fields, availability),
       ...validateDetails(fields),
     };
     if (Object.keys(errors).length > 0) {
@@ -253,7 +261,7 @@ export function BookConsultationForm() {
           <div className="mt-6 rounded-xl bg-cream px-5 py-4 text-left text-sm text-navy">
             <p className="font-semibold">{formatShortDate(fields.preferredDate)}</p>
             <p className="mt-1 text-text-muted">
-              {getTimeSlotLabel(fields.preferredTime as ConsultationTimeSlot)} ·{" "}
+              {getTimeSlotLabel(fields.preferredTime as ConsultationTimeSlot, availability)} ·{" "}
               {getModeLabel(fields.mode)} · {getTopicLabel(fields.topic as ConsultationTopic)}
             </p>
           </div>
@@ -285,6 +293,7 @@ export function BookConsultationForm() {
         </div>
 
         <ConsultationSummary
+          availability={availability}
           preferredDate={fields.preferredDate}
           preferredTime={fields.preferredTime}
           topic={fields.topic}
@@ -346,6 +355,7 @@ export function BookConsultationForm() {
                 </p>
               ) : null}
               <ConsultationDatePicker
+                availability={availability}
                 value={fields.preferredDate}
                 onChange={(date) => updateField("preferredDate", date)}
                 error={fieldErrors.preferredDate}
@@ -515,7 +525,7 @@ export function BookConsultationForm() {
                 <ReviewRow label="Date" value={formatShortDate(fields.preferredDate)} />
                 <ReviewRow
                   label="Time"
-                  value={getTimeSlotLabel(fields.preferredTime as ConsultationTimeSlot)}
+                  value={getTimeSlotLabel(fields.preferredTime as ConsultationTimeSlot, availability)}
                 />
                 <ReviewRow label="Meeting" value={getModeLabel(fields.mode)} />
                 <ReviewRow
@@ -557,6 +567,7 @@ export function BookConsultationForm() {
       </div>
 
       <ConsultationSummary
+        availability={availability}
         preferredDate={fields.preferredDate}
         preferredTime={fields.preferredTime}
         topic={fields.topic}

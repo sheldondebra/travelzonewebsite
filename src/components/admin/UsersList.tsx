@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useActionState } from "react";
 import {
   deleteStaffAction,
@@ -144,6 +145,13 @@ function UserRow({
     deleteStaffAction,
     undefined,
   );
+  const router = useRouter();
+
+  useEffect(() => {
+    if (updateState?.success || deleteState?.success) {
+      router.refresh();
+    }
+  }, [deleteState, router, updateState]);
 
   return (
     <tr>

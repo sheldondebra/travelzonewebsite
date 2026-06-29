@@ -13,6 +13,7 @@ import {
 } from "@/lib/paystack";
 import { getTourBySlug, getTourPaymentTotalGhsAsync } from "@/lib/tours";
 import { isPaystackConfiguredAsync } from "@/lib/payment-config";
+import { rateLimitFromHeaders } from "@/lib/rate-limit";
 
 function validateInput(input: BookingInput): string | null {
   if (!input.fullName.trim()) return "Full name is required.";
@@ -36,6 +37,14 @@ function validateInput(input: BookingInput): string | null {
 export async function createBookingAndPay(
   input: BookingInput
 ): Promise<BookingResult> {
+  const limit = await rateLimitFromHeaders("booking-form", 8, 30 * 60 * 1000);
+  if (!limit.allowed) {
+    return {
+      success: false,
+      error: "Too many booking attempts. Please wait a few minutes and try again.",
+    };
+  }
+
   const validationError = validateInput(input);
   if (validationError) {
     return { success: false, error: validationError };

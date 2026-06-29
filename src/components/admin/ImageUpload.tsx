@@ -69,7 +69,7 @@ export function ImageUpload({ label, value, folder, onChange }: Props) {
           />
         </div>
       </div>
-      {error ? <p className="mt-2 text-sm text-brand-red">{error}</p> : null}
+          {error ? <p className="mt-2 text-[13px] text-[#d63638]">{error}</p> : null}
     </div>
   );
 }

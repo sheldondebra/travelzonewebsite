@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { PageHero } from "@/components/PageHero";
 import { BookConsultationForm } from "@/components/consultation/BookConsultationForm";
 import { createMetadata } from "@/lib/seo";
+import { getConsultationAvailability } from "@/lib/site-settings";
 
 export const metadata: Metadata = createMetadata({
   title: "Book a Consultation",
@@ -12,7 +13,9 @@ export const metadata: Metadata = createMetadata({
   path: "/consultation",
 });
 
-export default function ConsultationPage() {
+export default async function ConsultationPage() {
+  const availability = await getConsultationAvailability();
+
   return (
     <>
       <Header />
@@ -27,7 +30,7 @@ export default function ConsultationPage() {
 
         <section className="bg-cream py-20 lg:py-28">
           <div className="section-container">
-            <BookConsultationForm />
+            <BookConsultationForm availability={availability} />
           </div>
         </section>
       </main>

@@ -6,11 +6,11 @@ export default function NewTourPage() {
   return (
     <>
       <AdminPageHeader
-        title="Add New Tour"
-        description="Fill in the basics, upload photos, and publish when ready."
+        title="New tour"
+        description="Add the essentials now — photos, highlights, and extras can follow."
         actions={
           <Link href="/admin/tours" className="admin-button-secondary">
-            Back to Tours
+            All tours
           </Link>
         }
       />

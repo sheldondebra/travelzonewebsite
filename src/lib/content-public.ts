@@ -2,12 +2,13 @@ import { createClient as createSupabaseJs } from "@supabase/supabase-js";
 import { cache } from "react";
 import type { BlogPost } from "@/lib/content";
 import type { Tour } from "@/lib/tours";
-import { normalizeBlogImageUrl } from "@/lib/blog-images";
+import { normalizeMediaUrl, normalizeMediaUrls } from "@/lib/media-url";
+import { sanitizeBlogHtml } from "@/lib/sanitize-html";
 import { getSupabaseEnv, isSupabaseConfigured } from "@/lib/supabase/config";
 import { staticBlogPosts, staticTours } from "@/lib/seed-data";
 
 function withNormalizedBlogImage<T extends { image: string }>(post: T): T {
-  return { ...post, image: normalizeBlogImageUrl(post.image) };
+  return { ...post, image: normalizeMediaUrl(post.image) };
 }
 
 function anonClient() {
@@ -32,8 +33,8 @@ function rowToTour(row: Record<string, unknown>): Tour {
     currency: (row.currency as "USD" | "GHS") ?? "USD",
     priceNote: (row.price_note as string) ?? "",
     travelPeriod: (row.travel_period as string) ?? "",
-    image: (row.image as string) ?? "",
-    gallery: asStringArray(row.gallery),
+    image: normalizeMediaUrl((row.image as string) ?? ""),
+    gallery: normalizeMediaUrls(asStringArray(row.gallery)),
     description: (row.description as string) ?? "",
     overview: asStringArray(row.overview),
     highlights: asStringArray(row.highlights),
@@ -43,17 +44,18 @@ function rowToTour(row: Record<string, unknown>): Tour {
 }
 
 function rowToBlogPost(row: Record<string, unknown>): BlogPost {
-  const bodyHtml = (row.body_html as string) ?? "";
+  const bodyHtml = sanitizeBlogHtml((row.body_html as string) ?? "");
   return {
     slug: row.slug as string,
     title: row.title as string,
     excerpt: (row.excerpt as string) ?? "",
     bodyHtml,
     content: htmlToParagraphs(bodyHtml),
-    image: normalizeBlogImageUrl((row.image as string) ?? ""),
+    image: normalizeMediaUrl((row.image as string) ?? ""),
     date: (row.display_date as string) ?? "",
     category: (row.category as string) ?? "",
     readTime: (row.read_time as string) ?? "5 min read",
+    updatedAt: (row.updated_at as string) ?? undefined,
   };
 }
 
@@ -67,7 +69,7 @@ export function htmlToParagraphs(html: string): string[] {
 }
 
 async function loadPublishedTours(): Promise<Tour[]> {
-  if (!isSupabaseConfigured()) return staticTours;
+  if (!isSupabaseConfigured()) return staticTours.map(normalizeTourMedia);
 
   const { data, error } = await anonClient()
     .from("tours")
@@ -75,13 +77,22 @@ async function loadPublishedTours(): Promise<Tour[]> {
     .eq("status", "published")
     .order("updated_at", { ascending: false });
 
-  if (error || !data?.length) return staticTours;
+  if (error || !data?.length) return staticTours.map(normalizeTourMedia);
   return data.map((row) => rowToTour(row));
+}
+
+function normalizeTourMedia(tour: Tour): Tour {
+  return {
+    ...tour,
+    image: normalizeMediaUrl(tour.image),
+    gallery: normalizeMediaUrls(tour.gallery),
+  };
 }
 
 async function loadTourBySlug(slug: string): Promise<Tour | null> {
   if (!isSupabaseConfigured()) {
-    return staticTours.find((t) => t.slug === slug) ?? null;
+    const tour = staticTours.find((t) => t.slug === slug);
+    return tour ? normalizeTourMedia(tour) : null;
   }
 
   const { data, error } = await anonClient()
@@ -92,7 +103,8 @@ async function loadTourBySlug(slug: string): Promise<Tour | null> {
     .maybeSingle();
 
   if (error || !data) {
-    return staticTours.find((t) => t.slug === slug) ?? null;
+    const tour = staticTours.find((t) => t.slug === slug);
+    return tour ? normalizeTourMedia(tour) : null;
   }
   return rowToTour(data);
 }

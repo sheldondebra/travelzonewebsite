@@ -14,6 +14,7 @@ import {
   SettingsIcon,
   ToursIcon,
   UsersIcon,
+  AboutIcon,
 } from "@/components/admin/AdminSidebarIcons";
 
 type MenuItem = {
@@ -47,6 +48,7 @@ const menuSections: MenuSection[] = [
       { href: "/admin/consultations", label: "Consultations", icon: ConsultationsIcon },
       { href: "/admin/messages", label: "Messages", icon: ContactMessagesIcon },
       { href: "/admin/newsletter", label: "Newsletter", icon: NewsletterIcon },
+      { href: "/admin/about", label: "About team", icon: AboutIcon },
     ],
   },
   {

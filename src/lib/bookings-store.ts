@@ -186,7 +186,7 @@ export async function updateBookingStatus(
 }
 
 export function createBookingId() {
-  return randomUUID().slice(0, 8).toUpperCase();
+  return randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase();
 }
 
 export function createPaystackReference(bookingId: string) {

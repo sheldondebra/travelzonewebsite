@@ -4,6 +4,29 @@ import { createClient } from "@/lib/supabase/server";
 import { compressImage } from "@/lib/image-compress";
 import { requireStaff } from "@/lib/supabase/auth";
 
+const ALLOWED_UPLOAD_ROOTS = new Set(["blog", "tours", "team", "uploads"]);
+
+function sanitizeUploadFolder(folder: string): string {
+  const normalized = folder
+    .replace(/\\/g, "/")
+    .split("/")
+    .map((part) => part.trim())
+    .filter((part) => part && part !== "." && part !== "..")
+    .join("/")
+    .slice(0, 120);
+
+  const root = normalized.split("/")[0];
+  if (!root || !ALLOWED_UPLOAD_ROOTS.has(root)) {
+    return "uploads";
+  }
+
+  if (!/^[a-z0-9][a-z0-9/_-]*$/i.test(normalized)) {
+    return "uploads";
+  }
+
+  return normalized;
+}
+
 export type UploadResult =
   | { success: true; url: string }
   | { success: false; error: string };
@@ -42,7 +65,7 @@ export async function uploadMediaAction(formData: FormData): Promise<UploadResul
   await requireStaff();
 
   const file = formData.get("file");
-  const folder = String(formData.get("folder") ?? "uploads").trim() || "uploads";
+  const folder = sanitizeUploadFolder(String(formData.get("folder") ?? "uploads"));
 
   if (!(file instanceof File)) {
     return { success: false, error: "No file selected." };
@@ -54,7 +77,7 @@ export async function uploadMediaAction(formData: FormData): Promise<UploadResul
 export async function uploadMediaBatchAction(formData: FormData) {
   await requireStaff();
 
-  const folder = String(formData.get("folder") ?? "uploads").trim() || "uploads";
+  const folder = sanitizeUploadFolder(String(formData.get("folder") ?? "uploads"));
   const files = formData.getAll("files").filter((item): item is File => item instanceof File);
 
   if (files.length === 0) {

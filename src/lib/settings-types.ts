@@ -23,6 +23,20 @@ export type SmtpSettings = {
   fromName: string;
 };
 
+export type ConsultationTimeSlotOption = {
+  value: string;
+  label: string;
+};
+
+export type ConsultationAvailabilitySettings = {
+  openDays: number[];
+  weekdaySlots: ConsultationTimeSlotOption[];
+  saturdaySlots: ConsultationTimeSlotOption[];
+  minNoticeMinutes: number;
+  maxAdvanceDays: number;
+  blockedDates: string[];
+};
+
 export type NotificationSettings = {
   emailOnBookingPaid: boolean;
   emailOnBookingPaidTo: string;
@@ -43,6 +57,7 @@ export type SiteSettings = {
   splitsms: SplitSmsSettings;
   smtp: SmtpSettings;
   notifications: NotificationSettings;
+  consultationAvailability: ConsultationAvailabilitySettings;
 };
 
 export type AdminSettingsView = {
@@ -55,4 +70,5 @@ export type AdminSettingsView = {
     splitsmsReady: boolean;
     smtpReady: boolean;
   };
+  revision: string;
 };

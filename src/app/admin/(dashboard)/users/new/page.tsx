@@ -14,11 +14,11 @@ export default async function AdminNewUserPage({ searchParams }: Props) {
   return (
     <>
       <AdminPageHeader
-        title="Add New User"
-        description="Create a staff account and choose what they can access."
+        title="Add user"
+        description="Create a staff account for the admin dashboard."
         actions={
           <Link href="/admin/users" className="admin-button-secondary">
-            Back to Users
+            Back to users
           </Link>
         }
       />

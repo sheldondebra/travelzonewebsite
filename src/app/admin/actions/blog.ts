@@ -5,9 +5,16 @@ import { redirect } from "next/navigation";
 import {
   deleteBlogPost,
   saveBlogPost,
+  updateBlogPostStatus,
 } from "@/lib/content-admin";
 import type { BlogPostInput, ContentStatus } from "@/lib/content-types";
+import { normalizeMediaUrl } from "@/lib/media-url";
+import { sanitizeBlogHtml } from "@/lib/sanitize-html";
 import { requireAdmin, requireStaff } from "@/lib/supabase/auth";
+
+export type BlogActionResult =
+  | { success: true; message: string }
+  | { success: false; error: string };
 
 function slugify(value: string) {
   return value
@@ -22,8 +29,8 @@ function parseBlogForm(formData: FormData): BlogPostInput {
     slug: slugify(String(formData.get("slug") ?? "")),
     title: String(formData.get("title") ?? ""),
     excerpt: String(formData.get("excerpt") ?? ""),
-    bodyHtml: String(formData.get("bodyHtml") ?? ""),
-    image: String(formData.get("image") ?? ""),
+    bodyHtml: sanitizeBlogHtml(String(formData.get("bodyHtml") ?? "")),
+    image: normalizeMediaUrl(String(formData.get("image") ?? "")),
     category: String(formData.get("category") ?? ""),
     readTime: String(formData.get("readTime") ?? "5 min read"),
     date: String(formData.get("date") ?? ""),
@@ -31,7 +38,10 @@ function parseBlogForm(formData: FormData): BlogPostInput {
   };
 }
 
-export async function saveBlogPostAction(formData: FormData) {
+export async function saveBlogPostAction(
+  _prev: { success: false; error: string } | undefined,
+  formData: FormData,
+) {
   const { user } = await requireStaff();
   const id = String(formData.get("id") ?? "") || undefined;
   const post = parseBlogForm(formData);
@@ -54,6 +64,64 @@ export async function saveBlogPostAction(formData: FormData) {
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Could not save post.",
+    };
+  }
+}
+
+export async function updateBlogPostStatusAction(
+  _prev: BlogActionResult | undefined,
+  formData: FormData,
+): Promise<BlogActionResult> {
+  await requireStaff();
+  const id = String(formData.get("id") ?? "");
+  const status = String(formData.get("status") ?? "") as ContentStatus;
+
+  if (!id) {
+    return { success: false, error: "Post not found." };
+  }
+
+  if (status !== "draft" && status !== "published") {
+    return { success: false, error: "Invalid status." };
+  }
+
+  try {
+    await updateBlogPostStatus(id, status);
+    revalidatePath("/");
+    revalidatePath("/blog");
+    revalidatePath("/admin/blog");
+    return {
+      success: true,
+      message: status === "published" ? "Post published." : "Post switched to draft.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Could not update post.",
+    };
+  }
+}
+
+export async function deleteBlogPostFormAction(
+  _prev: BlogActionResult | undefined,
+  formData: FormData,
+): Promise<BlogActionResult> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+
+  if (!id) {
+    return { success: false, error: "Post not found." };
+  }
+
+  try {
+    await deleteBlogPost(id);
+    revalidatePath("/");
+    revalidatePath("/blog");
+    revalidatePath("/admin/blog");
+    return { success: true, message: "Post deleted." };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Could not delete post.",
     };
   }
 }

@@ -20,6 +20,7 @@ function checkbox(value: FormDataEntryValue | null) {
 }
 
 export async function savePaystackSettingsAction(
+  _prev: SettingsActionResult | undefined,
   formData: FormData,
 ): Promise<SettingsActionResult> {
   try {
@@ -43,6 +44,7 @@ export async function savePaystackSettingsAction(
 }
 
 export async function saveSplitSmsSettingsAction(
+  _prev: SettingsActionResult | undefined,
   formData: FormData,
 ): Promise<SettingsActionResult> {
   try {
@@ -68,6 +70,7 @@ export async function saveSplitSmsSettingsAction(
 }
 
 export async function saveSmtpSettingsAction(
+  _prev: SettingsActionResult | undefined,
   formData: FormData,
 ): Promise<SettingsActionResult> {
   try {
@@ -96,6 +99,7 @@ export async function saveSmtpSettingsAction(
 }
 
 export async function saveNotificationSettingsAction(
+  _prev: SettingsActionResult | undefined,
   formData: FormData,
 ): Promise<SettingsActionResult> {
   try {
@@ -132,7 +136,10 @@ export async function saveNotificationSettingsAction(
   }
 }
 
-export async function testSmtpAction(formData: FormData): Promise<SettingsActionResult> {
+export async function testSmtpAction(
+  _prev: SettingsActionResult | undefined,
+  formData: FormData,
+): Promise<SettingsActionResult> {
   try {
     await requireAdmin();
     const to = String(formData.get("testEmail") ?? "").trim();
@@ -165,7 +172,10 @@ export async function refreshSplitSmsBalanceAction(): Promise<SplitSmsBalanceAct
   }
 }
 
-export async function testSplitSmsAction(formData: FormData): Promise<SettingsActionResult> {
+export async function testSplitSmsAction(
+  _prev: SettingsActionResult | undefined,
+  formData: FormData,
+): Promise<SettingsActionResult> {
   try {
     await requireAdmin();
     const phone = String(formData.get("testPhone") ?? "").trim();

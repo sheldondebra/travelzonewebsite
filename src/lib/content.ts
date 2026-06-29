@@ -163,6 +163,7 @@ export type BlogPost = {
   date: string;
   category: string;
   readTime: string;
+  updatedAt?: string;
 };
 
 export {

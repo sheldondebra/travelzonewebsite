@@ -63,7 +63,7 @@ export async function createStaffAction(
     }
 
     const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${appUrl}/admin/login`,
+      redirectTo: `${appUrl}/admin/auth/callback?next=/admin/reset-password`,
     });
 
     if (error) {
@@ -86,6 +86,7 @@ export async function createStaffAction(
       });
     }
 
+    revalidatePath("/admin");
     revalidatePath("/admin/users");
     return { success: true, message: "Invitation sent." };
   }
@@ -116,10 +117,11 @@ export async function createStaffAction(
     });
   }
 
+  revalidatePath("/admin");
   revalidatePath("/admin/users");
   return {
     success: true,
-    message: staff.user.email === email ? "Your account was updated." : "User created.",
+    message: staff.user.email === email ? "Your account was updated." : "User added.",
   };
 }
 
@@ -157,6 +159,7 @@ export async function updateStaffRoleAction(
 
   await updateStaffUserRole(userId, roleValue);
 
+  revalidatePath("/admin");
   revalidatePath("/admin/users");
   return { success: true, message: "User role updated." };
 }
@@ -183,6 +186,7 @@ export async function deleteStaffAction(
     return { success: false, error: error.message };
   }
 
+  revalidatePath("/admin");
   revalidatePath("/admin/users");
   return { success: true, message: "User deleted." };
 }

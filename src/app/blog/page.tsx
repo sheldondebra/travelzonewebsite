@@ -13,16 +13,35 @@ export const revalidate = 3600;
 
 const POSTS_PER_PAGE = 6;
 
-export const metadata: Metadata = createMetadata({
-  title: "Travel Blog",
-  description:
-    "Ghana travel guides and tips from the Travel Zone team — Cape Coast, Kakum, Mole National Park, group trips, and more.",
-  path: "/blog",
-});
-
 type BlogPageProps = {
   searchParams: Promise<{ page?: string }>;
 };
+
+export async function generateMetadata({
+  searchParams,
+}: BlogPageProps): Promise<Metadata> {
+  const { page: pageParam } = await searchParams;
+  const requestedPage = Number.parseInt(pageParam ?? "1", 10);
+  const currentPage =
+    Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+
+  if (currentPage > 1) {
+    return createMetadata({
+      title: `Travel Blog — Page ${currentPage}`,
+      description:
+        "Ghana travel guides and tips from the Travel Zone team — Cape Coast, Kakum, Mole National Park, group trips, and more.",
+      path: `/blog?page=${currentPage}`,
+      noIndex: true,
+    });
+  }
+
+  return createMetadata({
+    title: "Travel Blog",
+    description:
+      "Ghana travel guides and tips from the Travel Zone team — Cape Coast, Kakum, Mole National Park, group trips, and more.",
+    path: "/blog",
+  });
+}
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
   const { page: pageParam } = await searchParams;

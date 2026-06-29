@@ -7,6 +7,7 @@ import {
   saveContactMessage,
 } from "@/lib/contact-messages-store";
 import { sendContactMessageEmails } from "@/lib/email";
+import { rateLimitFromHeaders } from "@/lib/rate-limit";
 
 function validateInput(input: ContactMessageInput): string | null {
   if (!input.name.trim()) return "Full name is required.";
@@ -40,6 +41,14 @@ function validateInput(input: ContactMessageInput): string | null {
 export async function submitContactMessage(
   input: ContactMessageInput,
 ): Promise<ContactMessageResult> {
+  const limit = await rateLimitFromHeaders("contact-form", 6, 15 * 60 * 1000);
+  if (!limit.allowed) {
+    return {
+      success: false,
+      error: "Too many messages sent recently. Please wait and try again.",
+    };
+  }
+
   const validationError = validateInput(input);
   if (validationError) {
     return { success: false, error: validationError };

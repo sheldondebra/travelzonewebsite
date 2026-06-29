@@ -9,8 +9,8 @@ export const metadata: Metadata = createMetadata({
   title: "Page Not Found",
   description:
     "This page could not be found. Return to Travel Zone Ghana to browse tours and plan your trip.",
-  path: "/404",
   noIndex: true,
+  canonical: false,
 });
 
 const links = [

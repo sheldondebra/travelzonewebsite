@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { services, contactInfo, teamMembers, teamStory } from "@/lib/content";
+import { services, contactInfo, teamStory } from "@/lib/content";
+import type { AboutTeamMember } from "@/lib/about-team";
 
 export function AboutHero() {
   return (
@@ -133,7 +134,7 @@ export function AboutStory() {
   );
 }
 
-export function AboutTeam() {
+export function AboutTeam({ members }: { members: AboutTeamMember[] }) {
   return (
     <section className="border-t border-gray-100 bg-white py-20 lg:py-28">
       <div className="section-container">
@@ -192,9 +193,9 @@ export function AboutTeam() {
           </div>
 
           <div className="mt-10 grid gap-6 lg:grid-cols-3 lg:gap-8">
-            {teamMembers.map((member, index) => (
+            {members.map((member, index) => (
               <article
-                key={member.name}
+                key={`${member.name}-${index}`}
                 className={`group flex flex-col overflow-hidden bg-cream ${
                   index === 0 ? "lg:-mt-4" : ""
                 }`}

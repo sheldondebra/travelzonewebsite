@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { AdminPageHeader, AdminWidget } from "@/components/admin/AdminChrome";
 import { BookingsList } from "@/components/admin/BookingsList";
+import { ConsultationAvailabilityForm } from "@/components/admin/ConsultationAvailabilityForm";
 import type { TourBooking } from "@/lib/bookings";
 import { getBookingStats } from "@/lib/booking-admin";
+import type { ConsultationAvailabilitySettings } from "@/lib/settings-types";
 
 type Props = {
   bookings: TourBooking[];
+  availability: ConsultationAvailabilitySettings;
 };
 
-export function BookingsDashboard({ bookings }: Props) {
+export function BookingsDashboard({ bookings, availability }: Props) {
   const stats = getBookingStats(bookings);
 
   return (
@@ -23,6 +26,10 @@ export function BookingsDashboard({ bookings }: Props) {
       />
 
       <div className="admin-dashboard-columns mb-5">
+        <AdminWidget title="Consultation booking schedule">
+          <ConsultationAvailabilityForm availability={availability} canEdit={true} />
+        </AdminWidget>
+
         <AdminWidget title="Summary">
           <ul className="admin-glance-list">
             <li>

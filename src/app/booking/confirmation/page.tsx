@@ -3,7 +3,10 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { BookingDetailsSummary } from "@/components/booking/BookingDetailsSummary";
 import { PhoneIcon } from "@/components/ContactIcons";
-import { getBookingById } from "@/lib/bookings-store";
+import {
+  canViewBookingDetails,
+  getBookingForConfirmation,
+} from "@/lib/booking-access";
 import { contactInfo } from "@/lib/content";
 import { createMetadata } from "@/lib/seo";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -13,9 +16,9 @@ type Props = {
 };
 
 export default async function BookingConfirmationPage({ searchParams }: Props) {
-  const { reference, ref, paid } = await searchParams;
-  const bookingId = ref;
-  const booking = bookingId ? await getBookingById(bookingId) : null;
+  const { reference, paid } = await searchParams;
+  const booking = await getBookingForConfirmation(reference);
+  const canViewDetails = canViewBookingDetails(booking, reference);
   const isPaid = paid === "1" || booking?.paymentStatus === "paid";
   const settings = await getSiteSettings();
   const smsReady =
@@ -63,7 +66,7 @@ export default async function BookingConfirmationPage({ searchParams }: Props) {
               </p>
             </div>
 
-            {booking ? (
+            {canViewDetails && booking ? (
               <BookingDetailsSummary
                 variant={isPaid ? "confirmed" : "failed"}
                 bookingId={booking.id}
@@ -82,16 +85,20 @@ export default async function BookingConfirmationPage({ searchParams }: Props) {
               <div className="rounded-2xl border border-gray-100 bg-white px-6 py-8 text-center text-sm text-text-muted">
                 {reference ? (
                   <>
-                    <p>We could not load booking details for this payment.</p>
+                    <p>
+                      {isPaid
+                        ? "Your payment was received. Use the payment reference from your SMS or email to view full booking details."
+                        : "We could not verify this payment reference."}
+                    </p>
                     <p className="mt-2 font-mono text-xs text-navy">{reference}</p>
                   </>
                 ) : (
-                  <p>No booking reference was provided.</p>
+                  <p>No payment reference was provided.</p>
                 )}
               </div>
             )}
 
-            {booking?.specialRequests && (
+            {canViewDetails && booking?.specialRequests && (
               <div className="mt-4 rounded-2xl border border-gray-100 bg-white px-6 py-4">
                 <p className="text-xs font-semibold tracking-wide text-text-muted uppercase">
                   Your notes
@@ -100,7 +107,7 @@ export default async function BookingConfirmationPage({ searchParams }: Props) {
               </div>
             )}
 
-            {isPaid && booking && (
+            {isPaid && canViewDetails && booking && (
               <div className="mt-4 rounded-2xl border border-gray-100 bg-white px-6 py-4 text-sm text-text-muted">
                 <p className="font-semibold text-navy">What happens next</p>
                 <ul className="mt-3 space-y-2">
@@ -112,7 +119,7 @@ export default async function BookingConfirmationPage({ searchParams }: Props) {
             )}
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              {booking?.tourSlug && !isPaid && (
+              {canViewDetails && booking?.tourSlug && !isPaid && (
                 <Link
                   href={`/book?tour=${booking.tourSlug}`}
                   className="btn-primary flex-1 text-center"

@@ -10,10 +10,12 @@ import {
   type ConsultationTimeSlot,
   type ConsultationTopic,
 } from "@/lib/consultations";
+import type { ConsultationAvailabilitySettings } from "@/lib/settings-types";
 import { formatShortDate } from "@/lib/date-utils";
 import { getWhatsAppUrl } from "@/lib/whatsapp";
 
 type Props = {
+  availability?: ConsultationAvailabilitySettings;
   preferredDate?: string;
   preferredTime?: ConsultationTimeSlot | "";
   topic?: ConsultationTopic | "";
@@ -23,6 +25,7 @@ type Props = {
 };
 
 export function ConsultationSummary({
+  availability,
   preferredDate,
   preferredTime,
   topic,
@@ -38,7 +41,7 @@ export function ConsultationSummary({
         preferredDate ? `\nPreferred date: ${formatShortDate(preferredDate)}` : ""
       }${
         preferredTime
-          ? `\nPreferred time: ${getTimeSlotLabel(preferredTime as ConsultationTimeSlot)}`
+          ? `\nPreferred time: ${getTimeSlotLabel(preferredTime as ConsultationTimeSlot, availability)}`
           : ""
       }${topic ? `\nTopic: ${getTopicLabel(topic as ConsultationTopic)}` : ""}${
         mode ? `\nMeeting: ${getModeLabel(mode as ConsultationMode)}` : ""
@@ -67,7 +70,7 @@ export function ConsultationSummary({
             label="Time"
             value={
               preferredTime
-                ? getTimeSlotLabel(preferredTime as ConsultationTimeSlot)
+                ? getTimeSlotLabel(preferredTime as ConsultationTimeSlot, availability)
                 : "Select an available slot"
             }
             muted={!preferredTime}

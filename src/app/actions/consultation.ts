@@ -3,18 +3,22 @@
 import type { ConsultationInput, ConsultationResult } from "@/lib/consultations";
 import {
   consultationModes,
-  consultationTimeSlots,
   consultationTopics,
   isConsultationDateSelectable,
   isConsultationTimeSelectable,
+  isValidConsultationTime,
 } from "@/lib/consultations";
 import {
   createConsultationId,
   saveConsultation,
 } from "@/lib/consultations-store";
 import { sendConsultationBookingEmails } from "@/lib/email";
+import { rateLimitFromHeaders } from "@/lib/rate-limit";
+import { getConsultationAvailability } from "@/lib/site-settings";
 
-function validateInput(input: ConsultationInput): string | null {
+async function validateInput(input: ConsultationInput): Promise<string | null> {
+  const availability = await getConsultationAvailability();
+
   if (!input.fullName.trim()) return "Full name is required.";
 
   if (
@@ -31,17 +35,15 @@ function validateInput(input: ConsultationInput): string | null {
   }
 
   if (!input.preferredDate) return "Please select a preferred date.";
-  if (!isConsultationDateSelectable(input.preferredDate)) {
-    return "Choose a weekday or Saturday — we are closed on Sundays.";
+  if (!isConsultationDateSelectable(input.preferredDate, availability)) {
+    return "That date is not available. Please choose another day.";
   }
 
-  if (
-    !consultationTimeSlots.some((slot) => slot.value === input.preferredTime)
-  ) {
+  if (!isValidConsultationTime(input.preferredTime, availability)) {
     return "Please select a valid time slot.";
   }
 
-  if (!isConsultationTimeSelectable(input.preferredDate, input.preferredTime)) {
+  if (!isConsultationTimeSelectable(input.preferredDate, input.preferredTime, availability)) {
     return "That time is not available on the selected day.";
   }
 
@@ -59,7 +61,15 @@ function validateInput(input: ConsultationInput): string | null {
 export async function bookConsultation(
   input: ConsultationInput,
 ): Promise<ConsultationResult> {
-  const validationError = validateInput(input);
+  const limit = await rateLimitFromHeaders("consultation-form", 5, 30 * 60 * 1000);
+  if (!limit.allowed) {
+    return {
+      success: false,
+      error: "Too many requests recently. Please wait and try again.",
+    };
+  }
+
+  const validationError = await validateInput(input);
   if (validationError) {
     return { success: false, error: validationError };
   }

@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { isConsultationDateSelectable } from "@/lib/consultations";
+import {
+  getOpenDaysSummary,
+  isConsultationDateSelectable,
+} from "@/lib/consultation-availability";
+import type { ConsultationAvailabilitySettings } from "@/lib/settings-types";
 import {
   formatShortDate,
   getLocalTodayIso,
@@ -10,6 +14,7 @@ import {
 } from "@/lib/date-utils";
 
 type ConsultationDatePickerProps = {
+  availability: ConsultationAvailabilitySettings;
   value: string;
   onChange: (isoDate: string) => void;
   error?: string;
@@ -27,6 +32,7 @@ function startOfMonth(date: Date) {
 }
 
 export function ConsultationDatePicker({
+  availability,
   value,
   onChange,
   error,
@@ -85,9 +91,7 @@ export function ConsultationDatePicker({
         </button>
       </div>
 
-      <p className="mt-3 text-xs text-text-muted">
-        Open Mon–Fri and Sat. Sundays are unavailable.
-      </p>
+      <p className="mt-3 text-xs text-text-muted">{getOpenDaysSummary(availability)}</p>
 
       <div className="mt-4 grid grid-cols-7 gap-1 text-center">
         {WEEKDAYS.map((day) => (
@@ -104,10 +108,15 @@ export function ConsultationDatePicker({
             return <span key={`empty-${index}`} aria-hidden />;
           }
 
-          const selectable = isConsultationDateSelectable(cell.iso, minDate);
+          const selectable = isConsultationDateSelectable(cell.iso, availability, minDate);
           const isSelected = value === cell.iso;
           const isToday = cell.iso === minDate;
-          const isSunday = new Date(parseIso(cell.iso).year, parseIso(cell.iso).month, cell.day).getDay() === 0;
+          const dayOfWeek = new Date(
+            parseIso(cell.iso).year,
+            parseIso(cell.iso).month,
+            cell.day,
+          ).getDay();
+          const isClosed = !availability.openDays.includes(dayOfWeek);
 
           return (
             <button
@@ -115,7 +124,7 @@ export function ConsultationDatePicker({
               type="button"
               disabled={!selectable}
               onClick={() => onChange(cell.iso)}
-              title={isSunday ? "Closed on Sundays" : undefined}
+              title={isClosed ? "Not available on this day" : undefined}
               className={`relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm transition-colors ${
                 isSelected
                   ? "bg-brand-red font-semibold text-white"

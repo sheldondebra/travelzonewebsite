@@ -351,12 +351,84 @@ body {
   @apply py-2 text-[1.3rem] font-normal;
 }
 
+.admin-tour-form .admin-input-title {
+  @apply border-[#c3c4c7] bg-[#fcfcfc] py-2.5 text-[1.15rem];
+}
+
+.admin-field-hint {
+  @apply mt-1.5 text-[12px] leading-relaxed text-[#787c82];
+}
+
+.admin-form-grid-2 {
+  @apply grid gap-4 sm:grid-cols-2;
+}
+
+.admin-form-price-row {
+  @apply mt-4 grid gap-4 border-t border-[#f0f0f1] pt-4 sm:grid-cols-2;
+}
+
+.admin-text-button {
+  @apply cursor-pointer border-0 bg-transparent p-0 text-[13px] font-medium text-[#2271b1] hover:text-[#135e96];
+}
+
+.admin-tour-extras-toggle {
+  @apply w-full rounded-[3px] border border-dashed border-[#c3c4c7] bg-white px-4 py-3 text-left text-[13px] font-medium text-[#2271b1] transition-colors hover:border-[#2271b1] hover:bg-[#f6f7f7];
+}
+
+.admin-tour-sidebar-sticky {
+  @apply lg:sticky lg:top-4;
+}
+
+.admin-rich-editor {
+  @apply overflow-hidden rounded-[3px] border border-[#c3c4c7] bg-white;
+}
+
+.admin-rich-editor-loading {
+  @apply px-4 py-8 text-center text-[13px] text-[#646970];
+}
+
+.admin-rich-editor-toolbar {
+  @apply flex flex-wrap gap-1.5 border-b border-[#f0f0f1] bg-[#f6f7f7] px-3 py-2;
+}
+
+.admin-rich-editor-btn {
+  @apply cursor-pointer rounded-[3px] border border-[#c3c4c7] bg-white px-2.5 py-1 text-[12px] font-semibold text-[#1d2327] transition-colors hover:border-[#2271b1] hover:text-[#2271b1];
+}
+
+.admin-rich-editor-btn-active {
+  @apply border-[#2271b1] bg-[#2271b1] text-white hover:border-[#135e96] hover:bg-[#135e96] hover:text-white;
+}
+
 .admin-tour-thumb {
   @apply block h-12 w-12 overflow-hidden rounded-[3px] border border-[#c3c4c7] bg-[#f0f0f1];
 }
 
 .admin-tour-thumb-empty {
   @apply flex h-12 w-12 items-center justify-center bg-[#f0f0f1] text-sm font-semibold text-[#646970];
+}
+
+.admin-tours-stats {
+  @apply mb-4 grid grid-cols-3 gap-3 sm:max-w-lg;
+}
+
+.admin-tours-stat {
+  @apply rounded-[3px] border border-[#c3c4c7] bg-white px-3 py-2.5 text-center shadow-[0_1px_1px_rgba(0,0,0,0.04)];
+}
+
+.admin-tours-stat-value {
+  @apply block text-xl font-semibold text-[#1d2327];
+}
+
+.admin-tours-stat-label {
+  @apply mt-0.5 block text-[11px] uppercase tracking-wide text-[#646970];
+}
+
+.admin-tours-toolbar {
+  @apply mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between;
+}
+
+.admin-tours-table tbody td {
+  @apply align-middle;
 }
 
 .admin-row-action-link {
@@ -431,6 +503,74 @@ body {
   @apply border-[#c3c4c7] border-b-white bg-white font-semibold text-[#1d2327];
 }
 
+.admin-settings-stats {
+  @apply sm:max-w-2xl;
+}
+
+.admin-settings-layout {
+  @apply grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start;
+}
+
+.admin-settings-nav {
+  @apply min-w-0;
+}
+
+.admin-settings-nav-list {
+  @apply m-0 flex list-none gap-1 overflow-x-auto p-0 lg:flex-col lg:overflow-visible;
+}
+
+.admin-settings-nav-link {
+  @apply flex w-full min-w-max cursor-pointer items-center justify-between gap-3 rounded-[3px] border border-transparent px-3 py-2 text-left text-[13px] text-[#646970] transition-colors hover:bg-white hover:text-[#2271b1];
+}
+
+.admin-settings-nav-link-active {
+  @apply border-[#c3c4c7] bg-white font-semibold text-[#1d2327] shadow-[0_1px_1px_rgba(0,0,0,0.04)];
+}
+
+.admin-settings-nav-dot {
+  @apply h-2 w-2 shrink-0 rounded-full bg-[#c3c4c7];
+}
+
+.admin-settings-nav-dot-ready {
+  @apply bg-[#00a32a];
+}
+
+.admin-settings-panel {
+  @apply min-w-0;
+}
+
+.admin-settings-toggle {
+  @apply flex cursor-pointer items-start gap-3;
+}
+
+.admin-settings-group {
+  @apply space-y-4 rounded-[3px] border border-[#f0f0f1] bg-[#f6f7f7] p-4;
+}
+
+.admin-settings-group-title {
+  @apply m-0 text-[13px] font-semibold text-[#1d2327];
+}
+
+.admin-settings-form-footer {
+  @apply border-t border-[#f0f0f1] pt-4;
+}
+
+.admin-settings-test-form {
+  @apply mt-4 flex flex-col gap-3 border-t border-[#f0f0f1] pt-4 sm:flex-row sm:items-end;
+}
+
+.admin-settings-balance {
+  @apply rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] p-4;
+}
+
+.admin-settings-balance-stat dt {
+  @apply text-[11px] font-semibold uppercase tracking-wide text-[#787c82];
+}
+
+.admin-settings-balance-stat dd {
+  @apply mt-1 text-2xl font-semibold text-[#1d2327];
+}
+
 /* WordPress-style admin login */
 .admin-login {
   @apply min-h-screen bg-[#f0f0f1] px-4 py-12;
@@ -448,11 +588,39 @@ body {
 }
 
 .admin-login-form {
-  @apply border border-[#c3c4c7] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)];
+  @apply overflow-hidden rounded-[3px] border border-[#c3c4c7] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)];
+}
+
+.admin-login-form-head {
+  @apply border-b border-[#c3c4c7] bg-[#f6f7f7] px-6 py-4;
+}
+
+.admin-login-title {
+  @apply m-0 text-[18px] font-normal text-[#1d2327];
+}
+
+.admin-login-subtitle {
+  @apply mt-1 mb-0 text-[13px] text-[#646970];
+}
+
+.admin-login-form form {
+  @apply p-6;
 }
 
 .admin-login-form .admin-label {
   @apply font-normal text-[#1d2327];
+}
+
+.admin-password-field {
+  @apply relative;
+}
+
+.admin-password-field .admin-input {
+  @apply pr-10;
+}
+
+.admin-password-toggle {
+  @apply absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[3px] text-[#646970] transition-colors hover:bg-[#f0f0f1] hover:text-[#1d2327];
 }
 
 .admin-login-error {
@@ -460,8 +628,21 @@ body {
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
 }
 
+.admin-login-success {
+  @apply mb-4 border-l-4 border-[#00a32a] bg-white px-3 py-2 text-[13px] text-[#3c434a];
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.admin-login-helper {
+  @apply text-[12px] leading-relaxed text-[#646970];
+}
+
+.admin-login-forgot-link {
+  @apply cursor-pointer border-0 bg-transparent p-0 text-[12px] text-[#2271b1] no-underline hover:text-[#135e96];
+}
+
 .admin-login-submit {
-  @apply mt-2 inline-flex min-h-[32px] w-full items-center justify-center rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-3 py-1 text-[13px] font-normal text-white shadow-none transition-colors hover:border-[#135e96] hover:bg-[#135e96] disabled:cursor-not-allowed disabled:opacity-70;
+  @apply mt-2 inline-flex min-h-[36px] w-full items-center justify-center rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-3 py-1.5 text-[13px] font-normal text-white shadow-none transition-colors hover:border-[#135e96] hover:bg-[#135e96] disabled:cursor-not-allowed disabled:opacity-70;
 }
 
 .admin-login-nav {

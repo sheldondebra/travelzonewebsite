@@ -8,6 +8,7 @@ import {
   updateTourStatus,
 } from "@/lib/content-admin";
 import type { ContentStatus, TourInput } from "@/lib/content-types";
+import { normalizeMediaUrl, normalizeMediaUrls } from "@/lib/media-url";
 import { slugify } from "@/lib/slugify";
 import { requireAdmin, requireStaff } from "@/lib/supabase/auth";
 
@@ -26,8 +27,10 @@ function parseTourForm(formData: FormData): TourInput {
     currency: (formData.get("currency") as "USD" | "GHS") ?? "USD",
     priceNote: String(formData.get("priceNote") ?? ""),
     travelPeriod: String(formData.get("travelPeriod") ?? ""),
-    image: String(formData.get("image") ?? ""),
-    gallery: JSON.parse(String(formData.get("gallery") ?? "[]")) as string[],
+    image: normalizeMediaUrl(String(formData.get("image") ?? "")),
+    gallery: normalizeMediaUrls(
+      JSON.parse(String(formData.get("gallery") ?? "[]")) as string[],
+    ),
     description: String(formData.get("description") ?? ""),
     overview: JSON.parse(String(formData.get("overview") ?? "[]")) as string[],
     highlights: JSON.parse(
@@ -39,7 +42,10 @@ function parseTourForm(formData: FormData): TourInput {
   };
 }
 
-export async function saveTourAction(formData: FormData) {
+export async function saveTourAction(
+  _prev: { success: false; error: string } | undefined,
+  formData: FormData,
+) {
   const { user } = await requireStaff();
   const id = String(formData.get("id") ?? "") || undefined;
   const tour = parseTourForm(formData);
@@ -53,6 +59,7 @@ export async function saveTourAction(formData: FormData) {
       id,
       authorId: user.id,
     });
+    revalidatePath("/");
     revalidatePath("/tours");
     revalidatePath(`/tours/${tour.slug}`);
     revalidatePath("/admin/tours");
@@ -83,6 +90,7 @@ export async function updateTourStatusAction(
 
   try {
     await updateTourStatus(id, status);
+    revalidatePath("/");
     revalidatePath("/tours");
     revalidatePath("/admin/tours");
     return {
@@ -110,6 +118,7 @@ export async function deleteTourFormAction(
 
   try {
     await deleteTour(id);
+    revalidatePath("/");
     revalidatePath("/tours");
     revalidatePath("/admin/tours");
     return { success: true, message: "Tour deleted." };
@@ -124,6 +133,7 @@ export async function deleteTourFormAction(
 export async function deleteTourAction(id: string) {
   await requireAdmin();
   await deleteTour(id);
+  revalidatePath("/");
   revalidatePath("/tours");
   revalidatePath("/admin/tours");
   redirect("/admin/tours");

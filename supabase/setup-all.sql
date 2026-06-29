@@ -176,8 +176,6 @@ create policy "Staff can read newsletter subscribers"
   on public.newsletter_subscribers for select to authenticated using (public.is_staff());
 
 drop policy if exists "Anyone can subscribe" on public.newsletter_subscribers;
-create policy "Anyone can subscribe"
-  on public.newsletter_subscribers for insert with check (true);
 
 create index if not exists newsletter_subscribers_created_at_idx
   on public.newsletter_subscribers (created_at desc);
@@ -394,7 +392,12 @@ as $$
       where u.id = auth.uid()
         and u.is_active = true
     ),
-    auth.jwt() -> 'app_metadata' ->> 'role',
+    case
+      when not exists (select 1 from public.users u where u.id = auth.uid())
+        and coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') in ('admin', 'editor')
+      then auth.jwt() -> 'app_metadata' ->> 'role'
+      else ''
+    end,
     ''
   );
 $$;

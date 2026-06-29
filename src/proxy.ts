@@ -26,14 +26,44 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (isAdminRoute && !isLogin && !isSetup) {
-    const role = user?.app_metadata?.role;
-    if (!user || (role !== "admin" && role !== "editor")) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role, is_active")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const role = profile?.is_active
+      ? profile.role
+      : user.app_metadata?.role;
+
+    if (role !== "admin" && role !== "editor") {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+
+    if (profile && !profile.is_active) {
+      await supabase.auth.signOut();
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }
   }
 
-  if ((isLogin || isSetup) && user?.app_metadata?.role) {
-    return NextResponse.redirect(new URL("/admin", request.url));
+  if ((isLogin || isSetup) && user) {
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role, is_active")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const role = profile?.is_active
+      ? profile.role
+      : user.app_metadata?.role;
+
+    if (role === "admin" || role === "editor") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
   }
 
   return response;
