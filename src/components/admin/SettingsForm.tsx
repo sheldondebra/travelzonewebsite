@@ -631,7 +631,7 @@ function NotificationsPanel({
               className="admin-input"
             />
             <p className="admin-field-hint">
-              Used for paid bookings, consultation requests, and contact form alerts.
+              Used for paid bookings, ticket requests, consultation requests, and contact form alerts.
               Falls back to the office email if left blank.
             </p>
           </div>
@@ -649,6 +649,21 @@ function NotificationsPanel({
             name="emailCustomerOnConsultationRequest"
             label="Confirmation email to customer"
             defaultChecked={settings.notifications.emailCustomerOnConsultationRequest}
+          />
+        </SettingsGroup>
+
+        <SettingsGroup title="Ticket booking requests">
+          <Toggle
+            id="notif-ticket-admin"
+            name="emailOnTicketRequest"
+            label="Email alert to admin inbox"
+            defaultChecked={settings.notifications.emailOnTicketRequest}
+          />
+          <Toggle
+            id="notif-ticket-customer"
+            name="emailCustomerOnTicketRequest"
+            label="Confirmation email to customer"
+            defaultChecked={settings.notifications.emailCustomerOnTicketRequest}
           />
         </SettingsGroup>
 

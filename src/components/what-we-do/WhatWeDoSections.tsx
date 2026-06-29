@@ -50,8 +50,11 @@ export function WhatWeDoHero() {
                 call, or book online — our consultants handle the details.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link href="/book" className="btn-primary">
-                  Book a trip
+                <Link href="/tickets" className="btn-primary">
+                  Request tickets
+                </Link>
+                <Link href="/book" className="btn-outline">
+                  Book a tour
                 </Link>
                 <a
                   href={`tel:${contactInfo.phoneHrefs[0]}`}
@@ -165,6 +168,14 @@ export function WhatWeDoServices() {
                   <p className="mt-3 text-sm leading-relaxed text-text-muted">
                     {service.detail}
                   </p>
+                  {service.slug === "airline-ticketing" ? (
+                    <Link
+                      href="/tickets"
+                      className="mt-4 inline-block text-sm font-semibold text-brand-red hover:underline"
+                    >
+                      Request a flight ticket →
+                    </Link>
+                  ) : null}
                 </div>
               </article>
             ))}

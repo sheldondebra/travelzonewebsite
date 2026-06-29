@@ -144,6 +144,8 @@ export async function saveNotificationSettingsAction(
         emailCustomerOnConsultationRequest: checkbox(
           formData.get("emailCustomerOnConsultationRequest"),
         ),
+        emailOnTicketRequest: checkbox(formData.get("emailOnTicketRequest")),
+        emailCustomerOnTicketRequest: checkbox(formData.get("emailCustomerOnTicketRequest")),
         emailOnContactMessage: checkbox(formData.get("emailOnContactMessage")),
         emailCustomerOnContactMessage: checkbox(
           formData.get("emailCustomerOnContactMessage"),

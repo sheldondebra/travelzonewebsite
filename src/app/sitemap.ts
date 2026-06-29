@@ -43,6 +43,7 @@ export default async function sitemap() {
   const staticRoutes = [
     { path: "", priority: 1, changeFrequency: "weekly" as const },
     { path: "/tours", priority: 0.9, changeFrequency: "weekly" as const },
+    { path: "/tickets", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/consultation", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/about", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/what-we-do", priority: 0.8, changeFrequency: "monthly" as const },

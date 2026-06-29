@@ -11,6 +11,7 @@ export type DashboardStats = {
   publishedTours: number;
   publishedPosts: number;
   pendingBookings: number;
+  pendingTicketRequests: number;
   pendingConsultations: number;
   pendingMessages: number;
   subscribers: number;
@@ -62,6 +63,12 @@ export function AdminDashboard({ stats, role, email, forbidden }: Props) {
                 <Link href="/admin/bookings">
                   <strong>{stats.pendingBookings}</strong> pending booking
                   {stats.pendingBookings === 1 ? "" : "s"}
+                </Link>
+              </li>
+              <li>
+                <Link href="/admin/tickets">
+                  <strong>{stats.pendingTicketRequests}</strong> pending ticket request
+                  {stats.pendingTicketRequests === 1 ? "" : "s"}
                 </Link>
               </li>
               <li>
@@ -125,6 +132,9 @@ export function AdminDashboard({ stats, role, email, forbidden }: Props) {
               </li>
               <li>
                 <Link href="/admin/bookings">Bookings</Link>
+              </li>
+              <li>
+                <Link href="/admin/tickets">Ticket requests</Link>
               </li>
               <li>
                 <Link href="/admin/consultations">Consultations</Link>

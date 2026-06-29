@@ -659,6 +659,38 @@ body {
   @apply align-top;
 }
 
+.admin-tickets-top {
+  @apply mb-5 grid gap-4;
+}
+
+.admin-tickets-stats {
+  @apply grid grid-cols-2 gap-3 sm:grid-cols-4;
+}
+
+.admin-tickets-stat {
+  @apply flex min-h-[88px] flex-col justify-center rounded-[3px] border border-[#c3c4c7] bg-white px-4 py-3 shadow-[0_1px_1px_rgba(0,0,0,0.04)];
+}
+
+.admin-tickets-stat-value {
+  @apply block text-2xl font-semibold leading-none text-[#1d2327];
+}
+
+.admin-tickets-stat-label {
+  @apply mt-2 block text-[11px] font-medium uppercase tracking-wide text-[#646970];
+}
+
+.admin-tickets-toolbar {
+  @apply grid gap-3 rounded-[3px] border border-[#c3c4c7] bg-white px-4 py-3 shadow-[0_1px_1px_rgba(0,0,0,0.04)] lg:grid-cols-[minmax(0,1fr)_minmax(220px,280px)] lg:items-center;
+}
+
+.admin-tickets-toolbar .admin-subsubsub {
+  @apply mb-0;
+}
+
+.admin-tickets-table tbody td {
+  @apply align-middle;
+}
+
 .admin-tours-stat {
   @apply rounded-[3px] border border-[#c3c4c7] bg-white px-3 py-2.5 text-center shadow-[0_1px_1px_rgba(0,0,0,0.04)];
 }

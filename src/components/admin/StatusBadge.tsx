@@ -14,6 +14,8 @@ const styles: Record<string, string> = {
   paid: "bg-[#edfaef] text-[#007017]",
   unpaid: "bg-[#f0f0f1] text-[#646970]",
   failed: "bg-[#fcf0f1] text-[#d63638]",
+  quoted: "bg-[#f0f6fc] text-[#2271b1]",
+  booked: "bg-[#edfaef] text-[#007017]",
 };
 
 export function StatusBadge({ status }: Props) {

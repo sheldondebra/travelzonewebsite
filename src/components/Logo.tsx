@@ -22,7 +22,11 @@ export function Logo({
   linkLabel,
 }: LogoProps) {
   const src =
-    variant === "color" ? "/logo-color.png" : "/logo.png";
+    variant === "color"
+      ? "/logo-color.png"
+      : variant === "light"
+        ? "/logo-accent.png"
+        : "/logo.png";
   const imageClass = `${sizes[size]} max-w-full ${variant === "dark" ? "brightness-0" : ""}`;
 
   return (

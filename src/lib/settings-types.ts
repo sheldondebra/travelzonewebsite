@@ -55,6 +55,8 @@ export type NotificationSettings = {
   emailOnNewsletterSignupTo: string;
   emailOnConsultationRequest: boolean;
   emailCustomerOnConsultationRequest: boolean;
+  emailOnTicketRequest: boolean;
+  emailCustomerOnTicketRequest: boolean;
   emailOnContactMessage: boolean;
   emailCustomerOnContactMessage: boolean;
 };

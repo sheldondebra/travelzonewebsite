@@ -17,6 +17,7 @@ import {
 const quickLinks = [
   { label: "About", href: "/about" },
   { label: "Tours", href: "/tours" },
+  { label: "Tickets", href: "/tickets" },
   { label: "What We Do", href: "/what-we-do" },
   { label: "Blog", href: "/blog" },
   { label: "Contact", href: "/contact" },

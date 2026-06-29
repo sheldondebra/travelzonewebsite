@@ -153,6 +153,86 @@ export const processSteps = [
   },
 ];
 
+export const ticketingPage = {
+  highlights: [
+    { value: "2004", label: "Serving travelers", detail: "Same trusted East Legon team" },
+    { value: "All cabins", label: "Economy to First", detail: "Every major airline we partner with" },
+    { value: "Local", label: "Human consultants", detail: "Not a faceless booking engine" },
+  ],
+  offerings: [
+    {
+      title: "International flights",
+      description:
+        "Dubai, London, New York, Lagos, and beyond — we compare routes and fares across major carriers.",
+    },
+    {
+      title: "Domestic & regional",
+      description:
+        "Accra to Kumasi, Takoradi, Lagos, Abidjan, and other West African routes with reliable connections.",
+    },
+    {
+      title: "Business & corporate",
+      description:
+        "Priority support for frequent flyers, conference travel, and company account management.",
+    },
+    {
+      title: "Family & leisure",
+      description:
+        "Holiday tickets with the right baggage, seat preferences, and child-friendly routing.",
+    },
+    {
+      title: "Group & church travel",
+      description:
+        "Block seating, coordinated departures, and one invoice for schools, churches, and large parties.",
+    },
+    {
+      title: "Changes & rebooking",
+      description:
+        "Date changes, cancellations, and airline issues handled by our desk — you don't wait on hold.",
+    },
+  ],
+  reasons: [
+    "Real travel consultants who know Ghana routes and visa realities",
+    "Competitive fares through established airline partnerships",
+    "Pay securely at our office or via mobile money — no risky DIY bookings",
+    "One desk for flights, hotels, insurance, and tours when you need more",
+  ],
+  process: [
+    {
+      step: "01",
+      title: "Share your trip",
+      description:
+        "Tell us where you're flying, your dates, passengers, and cabin preference — online, by phone, or walk in.",
+    },
+    {
+      step: "02",
+      title: "We search & quote",
+      description:
+        "Our team compares airlines and fares, then sends you clear options with routes and total cost.",
+    },
+    {
+      step: "03",
+      title: "Confirm & pay",
+      description:
+        "Choose the option you want and pay at our East Legon office or via mobile money. We issue your ticket.",
+    },
+    {
+      step: "04",
+      title: "Fly with backup",
+      description:
+        "Need a change before departure? Call us. We stay with you through schedule shifts and rebooking.",
+    },
+  ],
+  popularRoutes: [
+    "Accra → Dubai",
+    "Accra → London",
+    "Accra → New York",
+    "Accra → Lagos",
+    "Accra → Johannesburg",
+    "Accra → Istanbul",
+  ],
+} as const;
+
 export type BlogPost = {
   slug: string;
   title: string;

@@ -14,6 +14,13 @@ import {
   type ConsultationTopic,
 } from "@/lib/consultations";
 import {
+  getCabinClassLabel,
+  getTripTypeLabel,
+  type CabinClass,
+  type TripType,
+} from "@/lib/ticket-requests";
+import { formatShortDate } from "@/lib/date-utils";
+import {
   getContactSubjectLabel,
   type ContactSubject,
 } from "@/lib/contact-messages";
@@ -189,6 +196,78 @@ Date: ${booking.preferredDate}
 Time: ${time}
 Topic: ${topic}
 Meeting: ${mode}${booking.notes ? `\nNotes: ${booking.notes}` : ""}`,
+  });
+}
+
+export async function sendTicketRequestEmails(request: {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  tripType: TripType;
+  origin: string;
+  destination: string;
+  departureDate: string;
+  returnDate?: string;
+  passengers: number;
+  cabinClass: CabinClass;
+  flexibleDates: boolean;
+  notes?: string;
+}) {
+  const notifications = await getNotificationSettings();
+  const adminRecipients = getAdminNotificationEmails(notifications);
+  const trip = getTripTypeLabel(request.tripType);
+  const cabin = getCabinClassLabel(request.cabinClass);
+  const route = `${request.origin} → ${request.destination}`;
+  const dates =
+    request.tripType === "round-trip" && request.returnDate
+      ? `${formatShortDate(request.departureDate)} – ${formatShortDate(request.returnDate)}`
+      : formatShortDate(request.departureDate);
+
+  const customerText = `Hi ${request.fullName},
+
+Thank you for your ticket request with Travel Zone Ghana. Our team will search fares and contact you with options — no payment is taken online.
+
+Reference: ${request.id}
+Route: ${route}
+Trip: ${trip}
+Travel dates: ${dates}
+Passengers: ${request.passengers}
+Cabin: ${cabin}${request.flexibleDates ? "\nFlexible dates: Yes" : ""}
+
+We typically respond within one business day. For urgent travel, call our office.
+
+Travel Zone Ghana
+#2 Boundary Road, East Legon, Accra`;
+
+  if (notifications.emailCustomerOnTicketRequest) {
+    try {
+      await sendEmail({
+        to: request.email,
+        subject: `Ticket request received — ${request.id}`,
+        text: customerText,
+      });
+    } catch {
+      // Customer email is best-effort when email delivery is configured.
+    }
+  }
+
+  if (!notifications.emailOnTicketRequest) return;
+
+  await sendEmail({
+    to: adminRecipients,
+    subject: `New ticket request ${request.id}`,
+    text: `New ticket booking request:
+
+Reference: ${request.id}
+Customer: ${request.fullName} (${request.email})
+Phone: ${request.phone}
+Route: ${route}
+Trip: ${trip}
+Dates: ${dates}
+Passengers: ${request.passengers}
+Cabin: ${cabin}
+Flexible dates: ${request.flexibleDates ? "Yes" : "No"}${request.notes ? `\nNotes: ${request.notes}` : ""}`,
   });
 }
 
