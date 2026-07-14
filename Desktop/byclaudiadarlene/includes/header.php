@@ -5,6 +5,7 @@ $pageTitle = $pageTitle ?? $config['app_name'];
 $pageDescription = $pageDescription ?? 'Luxury hair for every curl story.';
 $user = current_user();
 $cartCount = cart_count();
+$cartTotal = money(cart_subtotal_gbp());
 $currencies = currency_rates();
 $activeCurrency = current_currency();
 $promo = setting('promo_banner', 'Worldwide Shipping Available | Klarna & Clearpay | Checkout in your currency');
@@ -68,8 +69,7 @@ $promo = setting('promo_banner', 'Worldwide Shipping Available | Klarna & Clearp
         </button>
 
         <a href="<?= e(url('index.php?page=home')) ?>" class="absolute left-1/2 -translate-x-1/2 text-center brand-mark">
-          <span class="block text-[10px] tracking-[0.35em] uppercase text-brand-ink/50 mb-0.5">Hair by</span>
-          <span class="font-display text-2xl sm:text-3xl tracking-[0.04em] leading-none">Claudia Darlene</span>
+          <img src="<?= e(asset('assets/images/logo.png')) ?>" alt="By Claudia Darlene" class="h-12 sm:h-14 w-auto object-contain">
         </a>
 
         <div class="flex items-center gap-2 sm:gap-3 ml-auto">
@@ -83,12 +83,22 @@ $promo = setting('promo_banner', 'Worldwide Shipping Available | Klarna & Clearp
             </select>
           </form>
 
+          <a href="<?= e(url('index.php?page=compare')) ?>" class="relative p-2 hover:opacity-70 hidden sm:inline-flex" aria-label="Compare">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h2m6-16h2a2 2 0 012 2v12a2 2 0 01-2 2h-2m-3-18v20"/></svg>
+            <span id="compare-count" class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-brand-ink text-white text-[10px] flex items-center justify-center px-1 hidden">0</span>
+          </a>
+          <a href="<?= e(url('index.php?page=wishlist')) ?>" class="p-2 hover:opacity-70 hidden sm:inline-flex" aria-label="Wishlist">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 21C12 21 4 13.9 4 8.8 4 6.1 6.1 4 8.8 4c1.6 0 3.1.8 3.2 2 .1-1.2 1.6-2 3.2-2C17.9 4 20 6.1 20 8.8c0 5.1-8 12.2-8 12.2z"/></svg>
+          </a>
           <a href="<?= e(url('index.php?page=' . ($user ? 'account' : 'login'))) ?>" class="p-2 hover:opacity-70" aria-label="Account">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
           </a>
-          <a href="<?= e(url('index.php?page=cart')) ?>" class="relative p-2 hover:opacity-70" aria-label="Cart">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l-1.4 9.2A2 2 0 0115.62 20H8.38a2 2 0 01-1.98-1.8L5 9z"/></svg>
-            <span id="cart-count" class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-brand-ink text-white text-[10px] flex items-center justify-center px-1"><?= (int) $cartCount ?></span>
+          <a href="<?= e(url('index.php?page=cart')) ?>" class="relative flex items-center gap-2 p-2 hover:opacity-70" aria-label="Cart">
+            <span class="relative">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l-1.4 9.2A2 2 0 0115.62 20H8.38a2 2 0 01-1.98-1.8L5 9z"/></svg>
+              <span id="cart-count" class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-brand-ink text-white text-[10px] flex items-center justify-center px-1"><?= (int) $cartCount ?></span>
+            </span>
+            <span id="cart-total" class="hidden lg:inline text-xs font-medium tabular-nums"><?= e($cartTotal) ?></span>
           </a>
         </div>
       </div>
@@ -101,6 +111,8 @@ $promo = setting('promo_banner', 'Worldwide Shipping Available | Klarna & Clearp
         <a href="<?= e(url('index.php?page=blog')) ?>">Blog</a>
         <a href="<?= e(url('index.php?page=faq')) ?>">FAQ</a>
         <a href="<?= e(url('index.php?page=contact')) ?>">Contact</a>
+        <a href="<?= e(url('index.php?page=wishlist')) ?>">Wishlist</a>
+        <a href="<?= e(url('index.php?page=compare')) ?>">Compare</a>
         <div class="pt-2">
           <select onchange="window.location='<?= e(url('api/currency.php')) ?>?code='+this.value" class="w-full bg-white/50 border border-brand-ink/10 rounded-full px-4 py-2 text-xs">
             <?php foreach ($currencies as $code => $c): ?>

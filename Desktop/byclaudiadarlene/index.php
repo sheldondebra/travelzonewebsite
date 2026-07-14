@@ -10,7 +10,7 @@ $page = preg_replace('/[^a-z0-9\-]/', '', strtolower((string) ($_GET['page'] ?? 
 
 $allowed = [
     'home', 'shop', 'product', 'cart', 'checkout', 'about', 'faq', 'contact',
-    'login', 'register', 'logout', 'account', 'order-success', 'wishlist', 'blog', 'blog-post',
+    'login', 'register', 'logout', 'account', 'order-success', 'wishlist', 'blog', 'blog-post', 'compare',
 ];
 
 if (!in_array($page, $allowed, true)) {
