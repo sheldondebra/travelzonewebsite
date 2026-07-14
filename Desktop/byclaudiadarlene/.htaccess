@@ -1,0 +1,9 @@
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^product/([a-z0-9\-]+)/?$ index.php?page=product&slug=$1 [L,QSA]
+RewriteRule ^blog/([a-z0-9\-]+)/?$ index.php?page=blog-post&slug=$1 [L,QSA]
+RewriteRule ^blog/?$ index.php?page=blog [L,QSA]
+RewriteRule ^shop/?$ index.php?page=shop [L,QSA]
+RewriteRule ^cart/?$ index.php?page=cart [L,QSA]
+RewriteRule ^checkout/?$ index.php?page=checkout [L,QSA]

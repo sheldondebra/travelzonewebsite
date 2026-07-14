@@ -59,6 +59,7 @@ $promo = setting('promo_banner', 'Worldwide Shipping Available | Klarna & Clearp
           <a class="<?= active_nav('home') ?>" href="<?= e(url('index.php?page=home')) ?>">Home</a>
           <a class="<?= active_nav('shop') ?>" href="<?= e(url('index.php?page=shop')) ?>">Shop</a>
           <a class="<?= active_nav('about') ?>" href="<?= e(url('index.php?page=about')) ?>">About</a>
+          <a class="<?= active_nav('blog') ?>" href="<?= e(url('index.php?page=blog')) ?>">Blog</a>
           <a class="<?= active_nav('faq') ?>" href="<?= e(url('index.php?page=faq')) ?>">FAQ</a>
         </nav>
 
@@ -97,6 +98,7 @@ $promo = setting('promo_banner', 'Worldwide Shipping Available | Klarna & Clearp
         <a href="<?= e(url('index.php?page=home')) ?>">Home</a>
         <a href="<?= e(url('index.php?page=shop')) ?>">Shop</a>
         <a href="<?= e(url('index.php?page=about')) ?>">About</a>
+        <a href="<?= e(url('index.php?page=blog')) ?>">Blog</a>
         <a href="<?= e(url('index.php?page=faq')) ?>">FAQ</a>
         <a href="<?= e(url('index.php?page=contact')) ?>">Contact</a>
         <div class="pt-2">
