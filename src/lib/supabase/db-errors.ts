@@ -27,3 +27,14 @@ export function databaseSetupError() {
     "Database tables are not set up. Run supabase/setup-all.sql in the Supabase SQL Editor, then npm run seed.",
   );
 }
+
+export function isSupabaseUnavailableError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("fetch failed") ||
+    message.includes("Failed to fetch") ||
+    message.includes("ECONNREFUSED") ||
+    message.includes("ENOTFOUND") ||
+    message.includes("network")
+  );
+}

@@ -20,7 +20,8 @@ type BlogPageProps = {
 export async function generateMetadata({
   searchParams,
 }: BlogPageProps): Promise<Metadata> {
-  const { page: pageParam } = await searchParams;
+  const params = (await searchParams) ?? {};
+  const { page: pageParam } = params;
   const requestedPage = Number.parseInt(pageParam ?? "1", 10);
   const currentPage =
     Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
@@ -44,7 +45,8 @@ export async function generateMetadata({
 }
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
-  const { page: pageParam } = await searchParams;
+  const params = (await searchParams) ?? {};
+  const { page: pageParam } = params;
   const requestedPage = Number.parseInt(pageParam ?? "1", 10);
   const currentPage =
     Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;

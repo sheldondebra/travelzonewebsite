@@ -64,20 +64,20 @@ function fallbackMembers(): AboutTeamMember[] {
 export const getPublishedAboutTeamMembers = cache(async (): Promise<AboutTeamMember[]> => {
   if (!isSupabaseConfigured()) return fallbackMembers();
 
-  const { data, error } = await anonClient()
-    .from("about_team_members")
-    .select("*")
-    .eq("status", "published")
-    .order("sort_order", { ascending: true })
-    .order("updated_at", { ascending: false });
+  try {
+    const { data, error } = await anonClient()
+      .from("about_team_members")
+      .select("*")
+      .eq("status", "published")
+      .order("sort_order", { ascending: true })
+      .order("updated_at", { ascending: false });
 
-  if (error) {
-    if (isMissingTableError(error)) return fallbackMembers();
-    throw new Error(error.message);
+    if (error || !data?.length) return fallbackMembers();
+
+    return data.map((row) => toPublicMember(rowToMember(row)));
+  } catch {
+    return fallbackMembers();
   }
-
-  if (!data?.length) return fallbackMembers();
-  return data.map((row) => toPublicMember(rowToMember(row)));
 });
 
 export async function listAdminAboutTeamMembers(): Promise<AdminAboutTeamMember[]> {

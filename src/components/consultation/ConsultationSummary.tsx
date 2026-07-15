@@ -131,16 +131,18 @@ export function ConsultationSummary({
       {mode === "in-office" ? (
         <div className="overflow-hidden rounded-2xl shadow-sm">
           <iframe
-            title="Travel Zone office location"
-            src={`https://maps.google.com/maps?q=${contactInfo.mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+            title="Travel Zone office location — TRAVELZONE LTD, East Legon"
+            src={contactInfo.mapEmbedUrl}
             className="h-48 w-full border-0"
             loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
           />
           <div className="bg-white px-4 py-3 text-sm">
             <Link
-              href={`https://maps.google.com/?q=${contactInfo.mapQuery}`}
+              href={contactInfo.mapDirectionsUrl}
               target="_blank"
+              rel="noopener noreferrer"
               className="font-semibold text-brand-red hover:underline"
             >
               Get directions

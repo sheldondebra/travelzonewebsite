@@ -137,7 +137,34 @@ async function loadTourBySlug(slug: string): Promise<Tour | null> {
 }
 
 async function loadPublishedBlogPosts(): Promise<BlogPost[]> {
-  if (!isSupabaseConfigured()) {
+  try {
+    if (!isSupabaseConfigured()) {
+      return staticBlogPosts.map((post) =>
+        withNormalizedBlogImage({
+          ...post,
+          content: [],
+          bodyHtml: undefined,
+        }),
+      );
+    }
+
+    const { data, error } = await anonClient()
+      .from("blog_posts")
+      .select(BLOG_LIST_COLUMNS)
+      .eq("status", "published")
+      .order("published_at", { ascending: false });
+
+    if (error || !data?.length) {
+      return staticBlogPosts.map((post) =>
+        withNormalizedBlogImage({
+          ...post,
+          content: [],
+          bodyHtml: undefined,
+        }),
+      );
+    }
+    return data.map((row) => rowToBlogPostListItem(row));
+  } catch {
     return staticBlogPosts.map((post) =>
       withNormalizedBlogImage({
         ...post,
@@ -146,43 +173,31 @@ async function loadPublishedBlogPosts(): Promise<BlogPost[]> {
       }),
     );
   }
-
-  const { data, error } = await anonClient()
-    .from("blog_posts")
-    .select(BLOG_LIST_COLUMNS)
-    .eq("status", "published")
-    .order("published_at", { ascending: false });
-
-  if (error || !data?.length) {
-    return staticBlogPosts.map((post) =>
-      withNormalizedBlogImage({
-        ...post,
-        content: [],
-        bodyHtml: undefined,
-      }),
-    );
-  }
-  return data.map((row) => rowToBlogPostListItem(row));
 }
 
 async function loadBlogPostBySlug(slug: string): Promise<BlogPost | null> {
-  if (!isSupabaseConfigured()) {
+  try {
+    if (!isSupabaseConfigured()) {
+      const post = staticBlogPosts.find((p) => p.slug === slug);
+      return post ? withNormalizedBlogImage(post) : null;
+    }
+
+    const { data, error } = await anonClient()
+      .from("blog_posts")
+      .select("*")
+      .eq("slug", slug)
+      .eq("status", "published")
+      .maybeSingle();
+
+    if (error || !data) {
+      const post = staticBlogPosts.find((p) => p.slug === slug);
+      return post ? withNormalizedBlogImage(post) : null;
+    }
+    return rowToBlogPost(data);
+  } catch {
     const post = staticBlogPosts.find((p) => p.slug === slug);
     return post ? withNormalizedBlogImage(post) : null;
   }
-
-  const { data, error } = await anonClient()
-    .from("blog_posts")
-    .select("*")
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
-
-  if (error || !data) {
-    const post = staticBlogPosts.find((p) => p.slug === slug);
-    return post ? withNormalizedBlogImage(post) : null;
-  }
-  return rowToBlogPost(data);
 }
 
 export const getPublishedTours = cache(loadPublishedTours);

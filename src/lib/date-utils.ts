@@ -83,4 +83,26 @@ export function monthLabel(year: number, month: number) {
   return `${MONTH_NAMES[month]} ${year}`;
 }
 
+/** Parse blog display dates safely — avoids RangeError from invalid Date#toISOString(). */
+export function parseDisplayDateToIso(
+  value: string | undefined | null,
+  fallback?: string,
+) {
+  const safeFallback = fallback ?? new Date().toISOString();
+
+  if (!value?.trim()) return safeFallback;
+
+  const trimmed = value.trim();
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+    const parsed = new Date(trimmed);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+  }
+
+  const parsed = new Date(trimmed);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+
+  return safeFallback;
+}
+
 export { MONTH_NAMES };

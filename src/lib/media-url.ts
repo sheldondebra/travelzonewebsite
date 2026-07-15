@@ -5,6 +5,18 @@ const BROKEN_UNSPLASH_IDS: Record<string, string> = {
 export const DEFAULT_BLOG_IMAGE =
   "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=80";
 
+const NEXT_IMAGE_HOSTS = new Set(["images.unsplash.com"]);
+
+function isAllowedRemoteImageUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (NEXT_IMAGE_HOSTS.has(parsed.hostname)) return true;
+    return parsed.hostname.endsWith(".supabase.co");
+  } catch {
+    return false;
+  }
+}
+
 function getSupabaseBaseUrl() {
   return process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "") ?? null;
 }
@@ -82,21 +94,28 @@ export function normalizeMediaUrl(image: string | null | undefined, fallback?: s
 
   if (resolved.startsWith("http://") || resolved.startsWith("https://")) {
     resolved = normalizeAbsoluteUrl(resolved);
-    return resolved || defaultFallback;
+    if (!resolved || !isAllowedRemoteImageUrl(resolved)) {
+      return defaultFallback;
+    }
+    return resolved;
   }
 
   if (resolved.startsWith("//")) {
-    return normalizeAbsoluteUrl(`https:${resolved}`);
+    const absolute = normalizeAbsoluteUrl(`https:${resolved}`);
+    if (!absolute || !isAllowedRemoteImageUrl(absolute)) {
+      return defaultFallback;
+    }
+    return absolute;
   }
 
   resolved = replaceBrokenUnsplashUrls(resolved);
 
-  if (resolved.startsWith("/images/")) {
+  if (resolved.startsWith("/")) {
     return resolved;
   }
 
-  if (resolved.startsWith("/")) {
-    return resolved;
+  if (resolved.startsWith("images/")) {
+    return `/${resolved}`;
   }
 
   const storagePath = extractMediaStoragePath(resolved);

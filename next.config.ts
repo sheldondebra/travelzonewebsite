@@ -22,7 +22,7 @@ const securityHeaders = [
       "img-src 'self' data: blob: https://images.unsplash.com https://*.supabase.co",
       "font-src 'self' data:",
       "connect-src 'self' https://api.paystack.co https://*.supabase.co wss://*.supabase.co",
-      "frame-src https://js.paystack.co",
+      "frame-src https://js.paystack.co https://www.google.com https://maps.google.com",
       "base-uri 'self'",
       "form-action 'self'",
       "frame-ancestors 'none'",

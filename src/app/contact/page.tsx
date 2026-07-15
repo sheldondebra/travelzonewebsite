@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { PageHero } from "@/components/PageHero";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { ContactDetails } from "@/components/contact/ContactDetails";
+import { ClockIcon, MapPinIcon, PhoneIcon } from "@/components/ContactIcons";
 import { SocialProfileList } from "@/components/SocialLinks";
 import { contactInfo } from "@/lib/content";
 import { socialLinks, socialTagline } from "@/lib/social";
@@ -79,17 +80,87 @@ export default function ContactPage() {
           </div>
         </section>
 
-        <section className="bg-cream pb-20 lg:pb-28">
+        <section className="bg-cream py-20 lg:py-28">
           <div className="section-container">
-            <h2 className="heading-serif mb-6 text-2xl text-navy">Find Us</h2>
-            <div className="overflow-hidden rounded-2xl shadow-sm">
-              <iframe
-                title="TravelZone office location"
-                src={`https://maps.google.com/maps?q=${contactInfo.mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-                className="h-[400px] w-full border-0"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+            <div className="max-w-2xl">
+              <p className="text-sm font-medium text-brand-red">Visit the office</p>
+              <h2 className="heading-serif mt-2 text-3xl text-navy lg:text-4xl">Find Us</h2>
+              <p className="mt-4 text-[15px] leading-relaxed text-text-muted">
+                Our desk is on Boundary Road in East Legon. Walk in during office hours for
+                brochures, fare quotes, or to plan a trip in person.
+              </p>
+            </div>
+
+            <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(280px,360px)_1fr] lg:items-start lg:gap-10">
+              <div className="rounded-2xl bg-white p-8 shadow-sm">
+                <div className="space-y-6">
+                  <div>
+                    <p className="flex items-center gap-2 text-xs font-bold tracking-wider text-brand-red uppercase">
+                      <MapPinIcon className="h-4 w-4 shrink-0" />
+                      Office address
+                    </p>
+                    <p className="mt-2 text-[15px] font-medium leading-relaxed text-navy">
+                      {contactInfo.address}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="flex items-center gap-2 text-xs font-bold tracking-wider text-brand-red uppercase">
+                      <ClockIcon className="h-4 w-4 shrink-0" />
+                      Office hours
+                    </p>
+                    <p className="mt-2 text-[15px] leading-relaxed text-navy">{contactInfo.hours}</p>
+                  </div>
+
+                  <div>
+                    <p className="flex items-center gap-2 text-xs font-bold tracking-wider text-brand-red uppercase">
+                      <PhoneIcon className="h-4 w-4 shrink-0" />
+                      Call ahead
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      {contactInfo.phones.map((phone, index) => (
+                        <a
+                          key={phone}
+                          href={`tel:${contactInfo.phoneHrefs[index]}`}
+                          className="block text-[15px] font-medium text-navy hover:text-brand-red"
+                        >
+                          {phone}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <Link
+                  href={contactInfo.mapDirectionsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary mt-8 inline-flex w-full justify-center sm:w-auto"
+                >
+                  Get directions
+                </Link>
+              </div>
+
+              <div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm">
+                <iframe
+                  title="Travel Zone office location — TRAVELZONE LTD, East Legon"
+                  src={contactInfo.mapEmbedUrl}
+                  className="h-[320px] w-full border-0 sm:h-[380px] lg:h-[420px]"
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                />
+                <div className="border-t border-gray-100 px-5 py-4">
+                  <Link
+                    href={contactInfo.mapDirectionsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-semibold text-brand-red hover:underline"
+                  >
+                    Open in Google Maps →
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </section>

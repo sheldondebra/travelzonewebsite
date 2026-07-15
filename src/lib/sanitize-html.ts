@@ -20,14 +20,20 @@ const ALLOWED_TAGS = [
 const ALLOWED_ATTR = ["href", "src", "alt", "title", "target", "rel"];
 
 export function sanitizeBlogHtml(html: string): string {
-  const sanitized = DOMPurify.sanitize(html, {
-    ALLOWED_TAGS,
-    ALLOWED_ATTR,
-    ALLOW_DATA_ATTR: false,
-    ADD_ATTR: ["target"],
-  })
-    .replace(/<a /g, '<a rel="noopener noreferrer" ')
-    .trim();
+  if (!html.trim()) return "";
 
-  return normalizeHtmlImageUrls(sanitized);
+  try {
+    const sanitized = DOMPurify.sanitize(html, {
+      ALLOWED_TAGS,
+      ALLOWED_ATTR,
+      ALLOW_DATA_ATTR: false,
+      ADD_ATTR: ["target"],
+    })
+      .replace(/<a /g, '<a rel="noopener noreferrer" ')
+      .trim();
+
+    return normalizeHtmlImageUrls(sanitized);
+  } catch {
+    return "";
+  }
 }

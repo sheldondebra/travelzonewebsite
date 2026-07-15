@@ -7,9 +7,9 @@ import { Footer } from "@/components/Footer";
 import { JsonLd } from "@/components/JsonLd";
 import { BlogPostCta } from "@/components/BlogPostCta";
 import { getBlogPostBySlug, getPublishedBlogPosts } from "@/lib/content";
+import { parseDisplayDateToIso } from "@/lib/date-utils";
 import { createMetadata } from "@/lib/seo";
 import { blogPostJsonLd, breadcrumbJsonLd } from "@/lib/structured-data";
-import { sanitizeBlogHtml } from "@/lib/sanitize-html";
 
 export const revalidate = 3600;
 
@@ -27,7 +27,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await getBlogPostBySlug(slug);
   if (!post) notFound();
 
-  const publishedTime = post.updatedAt ?? new Date(post.date).toISOString();
+  const publishedTime = parseDisplayDateToIso(
+    post.date,
+    post.updatedAt ?? undefined,
+  );
+  const modifiedTime = parseDisplayDateToIso(post.updatedAt ?? post.date, publishedTime);
 
   return createMetadata({
     title: post.title,
@@ -35,8 +39,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     path: `/blog/${post.slug}`,
     ogImage: post.image,
     type: "article",
-    publishedTime: new Date(post.date).toISOString(),
-    modifiedTime: publishedTime,
+    publishedTime,
+    modifiedTime,
     authors: ["Travel Zone Ghana"],
   });
 }
@@ -98,7 +102,7 @@ export default async function BlogPostPage({ params }: Props) {
               {post.bodyHtml ? (
                 <div
                   className="prose prose-neutral mt-10 max-w-none space-y-6 text-[16px] leading-[1.85] text-text-muted [&_a]:text-brand-red [&_a]:underline"
-                  dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(post.bodyHtml) }}
+                  dangerouslySetInnerHTML={{ __html: post.bodyHtml }}
                 />
               ) : (
                 <div className="mt-10 space-y-6">

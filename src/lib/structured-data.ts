@@ -1,4 +1,5 @@
 import { contactInfo } from "@/lib/content";
+import { parseDisplayDateToIso } from "@/lib/date-utils";
 import { socialProfiles } from "@/lib/social";
 import { absoluteUrl, getSiteUrl, siteConfig } from "@/lib/seo";
 
@@ -117,7 +118,7 @@ export function blogPostJsonLd(post: {
     headline: post.title,
     description: post.excerpt,
     image: imageUrl,
-    datePublished: new Date(post.date).toISOString(),
+    datePublished: parseDisplayDateToIso(post.date),
     author: {
       "@type": "Organization",
       name: siteConfig.name,
