@@ -65,7 +65,10 @@ function rowToBlogPostListItem(row: Record<string, unknown>): BlogPost | null {
       date: String(row.display_date ?? ""),
       category: String(row.category ?? ""),
       readTime: String(row.read_time ?? "5 min read"),
-      updatedAt: typeof row.updated_at === "string" ? row.updated_at : undefined,
+      updatedAt:
+        row.updated_at != null
+          ? String(row.updated_at)
+          : undefined,
     };
   } catch {
     return null;
@@ -84,7 +87,7 @@ function rowToBlogPost(row: Record<string, unknown>): BlogPost {
     date: (row.display_date as string) ?? "",
     category: (row.category as string) ?? "",
     readTime: (row.read_time as string) ?? "5 min read",
-    updatedAt: (row.updated_at as string) ?? undefined,
+    updatedAt: row.updated_at != null ? String(row.updated_at) : undefined,
   };
 }
 

@@ -85,12 +85,16 @@ export function monthLabel(year: number, month: number) {
 
 /** Parse blog display dates safely — avoids RangeError from invalid Date#toISOString(). */
 export function parseDisplayDateToIso(
-  value: string | undefined | null,
+  value: string | Date | undefined | null,
   fallback?: string,
 ) {
   const safeFallback = fallback ?? new Date().toISOString();
 
-  if (!value?.trim()) return safeFallback;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? safeFallback : value.toISOString();
+  }
+
+  if (typeof value !== "string" || !value.trim()) return safeFallback;
 
   const trimmed = value.trim();
 
