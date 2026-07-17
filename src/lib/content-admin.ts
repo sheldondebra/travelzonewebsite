@@ -1,9 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
-import { databaseSetupError, isMissingTableError } from "@/lib/supabase/db-errors";
-import type { Tour } from "@/lib/tours";
 import { htmlToParagraphs } from "@/lib/content-public";
-import { normalizeMediaUrl, normalizeMediaUrls } from "@/lib/media-url";
-import { sanitizeBlogHtml } from "@/lib/sanitize-html";
 import type {
   AdminBlogPost,
   AdminTour,
@@ -11,6 +6,11 @@ import type {
   ContentStatus,
   TourInput,
 } from "@/lib/content-types";
+import { databaseSetupError, isMissingTableError } from "@/lib/db/errors";
+import { getSql } from "@/lib/db/postgres";
+import { normalizeMediaUrl, normalizeMediaUrls } from "@/lib/media-url";
+import { sanitizeBlogHtml } from "@/lib/sanitize-html";
+import type { Tour } from "@/lib/tours";
 
 function asStringArray(value: unknown): string[] {
   if (Array.isArray(value)) return value.filter((v) => typeof v === "string");
@@ -65,247 +65,272 @@ function rowToAdminBlogPost(row: Record<string, unknown>): AdminBlogPost {
   };
 }
 
-function tourToRow(
-  tour: TourInput,
-  authorId: string | null,
-  publishedAt?: string | null,
-) {
-  return {
-    slug: tour.slug,
-    title: tour.title,
-    tagline: tour.tagline,
-    location: tour.location,
-    duration: tour.duration,
-    price: tour.price,
-    currency: tour.currency,
-    price_note: tour.priceNote,
-    travel_period: tour.travelPeriod,
-    image: tour.image,
-    gallery: tour.gallery,
-    description: tour.description,
-    overview: tour.overview,
-    highlights: tour.highlights,
-    included: tour.included,
-    category: tour.category,
-    status: tour.status,
-    author_id: authorId,
-    published_at:
-      tour.status === "published"
-        ? (publishedAt ?? new Date().toISOString())
-        : null,
-  };
-}
-
-function blogToRow(
-  post: BlogPostInput,
-  authorId: string | null,
-  publishedAt?: string | null,
-) {
-  return {
-    slug: post.slug,
-    title: post.title,
-    excerpt: post.excerpt,
-    body_html: post.bodyHtml,
-    image: post.image,
-    category: post.category,
-    read_time: post.readTime,
-    display_date: post.date,
-    status: post.status,
-    author_id: authorId,
-    published_at:
-      post.status === "published"
-        ? (publishedAt ?? new Date().toISOString())
-        : null,
-  };
-}
-
 export async function listAdminTours(): Promise<AdminTour[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("tours")
-    .select("*")
-    .order("updated_at", { ascending: false });
-
-  if (error) {
+  const sql = getSql();
+  try {
+    const rows = await sql`select * from public.tours order by updated_at desc`;
+    return rows.map((row) => rowToAdminTour(row));
+  } catch (error) {
     if (isMissingTableError(error)) return [];
-    throw new Error(error.message);
+    throw error;
   }
-  return (data ?? []).map((row) => rowToAdminTour(row));
 }
 
 export async function getAdminTour(id: string): Promise<AdminTour | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("tours")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error) {
+  const sql = getSql();
+  try {
+    const rows = await sql`select * from public.tours where id = ${id}::uuid limit 1`;
+    return rows[0] ? rowToAdminTour(rows[0]) : null;
+  } catch (error) {
     if (isMissingTableError(error)) return null;
-    throw new Error(error.message);
+    throw error;
   }
-  return data ? rowToAdminTour(data) : null;
 }
 
 export async function saveTour(
   input: TourInput,
   options: { id?: string; authorId: string },
 ) {
-  const supabase = await createClient();
-  const row = tourToRow(input, options.authorId);
+  const sql = getSql();
+  const publishedAt =
+    input.status === "published" ? new Date().toISOString() : null;
 
-  if (options.id) {
-    const { error } = await supabase
-      .from("tours")
-      .update(row)
-      .eq("id", options.id);
-    if (error) {
-      if (isMissingTableError(error)) throw databaseSetupError();
-      throw new Error(error.message);
+  try {
+    if (options.id) {
+      await sql`
+        update public.tours set
+          slug = ${input.slug},
+          title = ${input.title},
+          tagline = ${input.tagline},
+          location = ${input.location},
+          duration = ${input.duration},
+          price = ${input.price},
+          currency = ${input.currency},
+          price_note = ${input.priceNote},
+          travel_period = ${input.travelPeriod},
+          image = ${input.image},
+          gallery = ${sql.json(input.gallery)},
+          description = ${input.description},
+          overview = ${sql.json(input.overview)},
+          highlights = ${sql.json(input.highlights)},
+          included = ${sql.json(input.included)},
+          category = ${input.category},
+          status = ${input.status},
+          author_id = ${options.authorId}::uuid,
+          published_at = case
+            when ${input.status} = 'published' then coalesce(published_at, ${publishedAt}::timestamptz)
+            else null
+          end,
+          updated_at = now()
+        where id = ${options.id}::uuid
+      `;
+      return options.id;
     }
-    return options.id;
-  }
 
-  const { data, error } = await supabase
-    .from("tours")
-    .insert(row)
-    .select("id")
-    .single();
-
-  if (error) {
+    const rows = await sql<{ id: string }[]>`
+      insert into public.tours (
+        slug, title, tagline, location, duration, price, currency,
+        price_note, travel_period, image, gallery, description,
+        overview, highlights, included, category, status, author_id, published_at
+      ) values (
+        ${input.slug},
+        ${input.title},
+        ${input.tagline},
+        ${input.location},
+        ${input.duration},
+        ${input.price},
+        ${input.currency},
+        ${input.priceNote},
+        ${input.travelPeriod},
+        ${input.image},
+        ${sql.json(input.gallery)},
+        ${input.description},
+        ${sql.json(input.overview)},
+        ${sql.json(input.highlights)},
+        ${sql.json(input.included)},
+        ${input.category},
+        ${input.status},
+        ${options.authorId}::uuid,
+        ${publishedAt}::timestamptz
+      )
+      returning id
+    `;
+    return rows[0].id;
+  } catch (error) {
     if (isMissingTableError(error)) throw databaseSetupError();
-    throw new Error(error.message);
+    throw error;
   }
-  return data.id as string;
 }
 
 export async function deleteTour(id: string) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("tours").delete().eq("id", id);
-  if (error) {
+  const sql = getSql();
+  try {
+    await sql`delete from public.tours where id = ${id}::uuid`;
+  } catch (error) {
     if (isMissingTableError(error)) throw databaseSetupError();
-    throw new Error(error.message);
+    throw error;
   }
 }
 
 export async function updateTourStatus(id: string, status: ContentStatus) {
-  const supabase = await createClient();
-  const payload: { status: ContentStatus; published_at?: string } = { status };
+  const sql = getSql();
+  const publishedAt = status === "published" ? new Date().toISOString() : null;
 
-  if (status === "published") {
-    payload.published_at = new Date().toISOString();
-  }
-
-  const { error } = await supabase.from("tours").update(payload).eq("id", id);
-  if (error) {
+  try {
+    await sql`
+      update public.tours
+      set
+        status = ${status},
+        published_at = case
+          when ${status} = 'published' then coalesce(published_at, ${publishedAt}::timestamptz)
+          else published_at
+        end,
+        updated_at = now()
+      where id = ${id}::uuid
+    `;
+  } catch (error) {
     if (isMissingTableError(error)) throw databaseSetupError();
-    throw new Error(error.message);
+    throw error;
   }
 }
 
 export async function listAdminBlogPosts(): Promise<AdminBlogPost[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("blog_posts")
-    .select("*")
-    .order("updated_at", { ascending: false });
-
-  if (error) {
+  const sql = getSql();
+  try {
+    const rows = await sql`select * from public.blog_posts order by updated_at desc`;
+    return rows.map((row) => rowToAdminBlogPost(row));
+  } catch (error) {
     if (isMissingTableError(error)) return [];
-    throw new Error(error.message);
+    throw error;
   }
-  return (data ?? []).map((row) => rowToAdminBlogPost(row));
 }
 
 export async function getAdminBlogPost(id: string): Promise<AdminBlogPost | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("blog_posts")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error) {
+  const sql = getSql();
+  try {
+    const rows = await sql`select * from public.blog_posts where id = ${id}::uuid limit 1`;
+    return rows[0] ? rowToAdminBlogPost(rows[0]) : null;
+  } catch (error) {
     if (isMissingTableError(error)) return null;
-    throw new Error(error.message);
+    throw error;
   }
-  return data ? rowToAdminBlogPost(data) : null;
 }
 
 export async function saveBlogPost(
   input: BlogPostInput,
   options: { id?: string; authorId: string },
 ) {
-  const supabase = await createClient();
-  const row = blogToRow(input, options.authorId);
+  const sql = getSql();
+  const publishedAt =
+    input.status === "published" ? new Date().toISOString() : null;
 
-  if (options.id) {
-    const { error } = await supabase
-      .from("blog_posts")
-      .update(row)
-      .eq("id", options.id);
-    if (error) {
-      if (isMissingTableError(error)) throw databaseSetupError();
-      throw new Error(error.message);
+  try {
+    if (options.id) {
+      await sql`
+        update public.blog_posts set
+          slug = ${input.slug},
+          title = ${input.title},
+          excerpt = ${input.excerpt},
+          body_html = ${input.bodyHtml},
+          image = ${input.image},
+          category = ${input.category},
+          read_time = ${input.readTime},
+          display_date = ${input.date},
+          status = ${input.status},
+          author_id = ${options.authorId}::uuid,
+          published_at = case
+            when ${input.status} = 'published' then coalesce(published_at, ${publishedAt}::timestamptz)
+            else null
+          end,
+          updated_at = now()
+        where id = ${options.id}::uuid
+      `;
+      return options.id;
     }
-    return options.id;
-  }
 
-  const { data, error } = await supabase
-    .from("blog_posts")
-    .insert(row)
-    .select("id")
-    .single();
-
-  if (error) {
+    const rows = await sql<{ id: string }[]>`
+      insert into public.blog_posts (
+        slug, title, excerpt, body_html, image, category, read_time,
+        display_date, status, author_id, published_at
+      ) values (
+        ${input.slug},
+        ${input.title},
+        ${input.excerpt},
+        ${input.bodyHtml},
+        ${input.image},
+        ${input.category},
+        ${input.readTime},
+        ${input.date},
+        ${input.status},
+        ${options.authorId}::uuid,
+        ${publishedAt}::timestamptz
+      )
+      returning id
+    `;
+    return rows[0].id;
+  } catch (error) {
     if (isMissingTableError(error)) throw databaseSetupError();
-    throw new Error(error.message);
+    throw error;
   }
-  return data.id as string;
 }
 
 export async function deleteBlogPost(id: string) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("blog_posts").delete().eq("id", id);
-  if (error) {
+  const sql = getSql();
+  try {
+    await sql`delete from public.blog_posts where id = ${id}::uuid`;
+  } catch (error) {
     if (isMissingTableError(error)) throw databaseSetupError();
-    throw new Error(error.message);
+    throw error;
   }
 }
 
 export async function updateBlogPostStatus(id: string, status: ContentStatus) {
-  const supabase = await createClient();
-  const payload: { status: ContentStatus; published_at?: string } = { status };
+  const sql = getSql();
+  const publishedAt = status === "published" ? new Date().toISOString() : null;
 
-  if (status === "published") {
-    payload.published_at = new Date().toISOString();
-  }
-
-  const { error } = await supabase.from("blog_posts").update(payload).eq("id", id);
-  if (error) {
+  try {
+    await sql`
+      update public.blog_posts
+      set
+        status = ${status},
+        published_at = case
+          when ${status} = 'published' then coalesce(published_at, ${publishedAt}::timestamptz)
+          else published_at
+        end,
+        updated_at = now()
+      where id = ${id}::uuid
+    `;
+  } catch (error) {
     if (isMissingTableError(error)) throw databaseSetupError();
-    throw new Error(error.message);
+    throw error;
+  }
+}
+
+async function countTable(
+  table: string,
+  filter?: { column: string; value: string | number | boolean },
+) {
+  const sql = getSql();
+  try {
+    if (filter) {
+      const rows = await sql.unsafe<{ count: string }[]>(
+        `select count(*)::text as count from public.${table} where ${filter.column} = $1`,
+        [filter.value],
+      );
+      return Number(rows[0]?.count ?? 0);
+    }
+
+    const rows = await sql.unsafe<{ count: string }[]>(
+      `select count(*)::text as count from public.${table}`,
+    );
+    return Number(rows[0]?.count ?? 0);
+  } catch (error) {
+    if (isMissingTableError(error)) return 0;
+    throw error;
   }
 }
 
 export async function getDashboardStats() {
-  const supabase = await createClient();
-
-  async function count(
-    table: string,
-    filter?: { column: string; value: string | number | boolean },
-  ) {
-    let query = supabase.from(table).select("id", { count: "exact", head: true });
-    if (filter) query = query.eq(filter.column, filter.value);
-    const { count: total, error } = await query;
-    if (error) {
-      if (isMissingTableError(error)) return 0;
-      throw new Error(error.message);
-    }
-    return total ?? 0;
-  }
-
   const [
     publishedTours,
     publishedPosts,
@@ -317,16 +342,16 @@ export async function getDashboardStats() {
     staffUsers,
     aboutTeamMembers,
   ] = await Promise.all([
-      count("tours", { column: "status", value: "published" }),
-      count("blog_posts", { column: "status", value: "published" }),
-      count("tour_bookings", { column: "status", value: "pending" }),
-      count("ticket_booking_requests", { column: "status", value: "pending" }),
-      count("consultation_bookings", { column: "status", value: "pending" }),
-      count("contact_messages", { column: "status", value: "pending" }),
-      count("newsletter_subscribers"),
-      count("users", { column: "is_active", value: true }),
-      count("about_team_members", { column: "status", value: "published" }),
-    ]);
+    countTable("tours", { column: "status", value: "published" }),
+    countTable("blog_posts", { column: "status", value: "published" }),
+    countTable("tour_bookings", { column: "status", value: "pending" }),
+    countTable("ticket_booking_requests", { column: "status", value: "pending" }),
+    countTable("consultation_bookings", { column: "status", value: "pending" }),
+    countTable("contact_messages", { column: "status", value: "pending" }),
+    countTable("newsletter_subscribers"),
+    countTable("users", { column: "is_active", value: true }),
+    countTable("about_team_members", { column: "status", value: "published" }),
+  ]);
 
   return {
     publishedTours,

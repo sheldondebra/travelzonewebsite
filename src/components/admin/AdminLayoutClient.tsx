@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminToastProvider } from "@/components/admin/AdminToastProvider";
 import type { SplitSmsBalance } from "@/lib/splitsms";
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { StaffRole } from "@/lib/auth/staff";
 
 type Props = {
   email: string;

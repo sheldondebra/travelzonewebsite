@@ -1,6 +1,8 @@
-import { createClient as createSupabaseJs } from "@supabase/supabase-js";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import { isDatabaseConfigured } from "@/lib/db/config";
+import { isMissingTableError } from "@/lib/db/errors";
+import { getSql } from "@/lib/db/postgres";
 
 export type NewsletterSubscriber = {
   email: string;
@@ -9,13 +11,6 @@ export type NewsletterSubscriber = {
 
 const NEWSLETTER_DIR = path.join(process.cwd(), "data");
 const NEWSLETTER_FILE = path.join(NEWSLETTER_DIR, "newsletter.json");
-
-function supabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createSupabaseJs(url, key);
-}
 
 async function readAll(): Promise<NewsletterSubscriber[]> {
   try {
@@ -31,31 +26,31 @@ async function writeAll(subscribers: NewsletterSubscriber[]) {
   await writeFile(NEWSLETTER_FILE, JSON.stringify(subscribers, null, 2));
 }
 
-function isMissingTableError(error: { code?: string; message?: string }) {
+function isUniqueViolation(error: unknown) {
   return (
-    error.code === "PGRST205" ||
-    Boolean(error.message?.includes("Could not find the table")) ||
-    Boolean(error.message?.includes("schema cache"))
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    String(error.code) === "23505"
   );
 }
 
 export async function saveNewsletterSubscriber(email: string) {
   const normalized = email.trim().toLowerCase();
-  const supabase = supabaseClient();
 
-  if (supabase) {
-    const { error } = await supabase
-      .from("newsletter_subscribers")
-      .insert({ email: normalized });
-    if (error?.code === "23505") {
-      return { alreadySubscribed: true as const };
-    }
-    if (error && isMissingTableError(error)) {
-      // DB not migrated yet — fall back to local JSON
-    } else if (error) {
-      throw new Error(error.message);
-    } else {
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      await sql`
+        insert into public.newsletter_subscribers (email)
+        values (${normalized})
+      `;
       return { alreadySubscribed: false as const };
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        return { alreadySubscribed: true as const };
+      }
+      if (!isMissingTableError(error)) throw error;
     }
   }
 
@@ -74,20 +69,21 @@ export async function saveNewsletterSubscriber(email: string) {
 }
 
 export async function listNewsletterSubscribers() {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("newsletter_subscribers")
-      .select("email, created_at")
-      .order("created_at", { ascending: false });
-    if (error) {
-      if (isMissingTableError(error)) return readAll();
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        select email, created_at
+        from public.newsletter_subscribers
+        order by created_at desc
+      `;
+      return rows.map((row) => ({
+        email: row.email as string,
+        createdAt: row.created_at as string,
+      }));
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return (data ?? []).map((row) => ({
-      email: row.email as string,
-      createdAt: row.created_at as string,
-    }));
   }
 
   return readAll();

@@ -7,7 +7,7 @@ import {
   BookStepsStrip,
 } from "@/components/tours/BookPageSections";
 import { BookTripFlow } from "@/components/tours/BookTripFlow";
-import { getPublishedTours, getTourBySlug } from "@/lib/tours";
+import { getPublishedTours, getTourBySlug } from "@/lib/content-public";
 import { isPaystackConfiguredAsync } from "@/lib/payment-config";
 import { createMetadata } from "@/lib/seo";
 

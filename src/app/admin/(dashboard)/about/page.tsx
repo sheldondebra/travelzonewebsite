@@ -5,7 +5,7 @@ import {
   listAdminAboutTeamMembers,
   seedDefaultAboutTeamMembersIfEmpty,
 } from "@/lib/about-team-store";
-import { requireStaff } from "@/lib/supabase/auth";
+import { requireStaff } from "@/lib/auth/staff";
 
 export default async function AdminAboutPage() {
   const { role } = await requireStaff();

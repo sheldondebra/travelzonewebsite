@@ -23,11 +23,6 @@ export type Tour = {
   category: string;
 };
 
-export {
-  getPublishedTours,
-  getTourBySlug,
-} from "@/lib/content-public";
-
 export function formatPrice(amount: number, currency: "USD" | "GHS" = "GHS") {
   if (currency === "USD") {
     return `USD ${amount.toLocaleString()}`;

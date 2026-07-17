@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { BookingStatus } from "@/lib/bookings";
 import { updateBookingStatus } from "@/lib/bookings-store";
-import { requireAdmin } from "@/lib/supabase/auth";
+import { requireAdmin } from "@/lib/auth/staff";
 
 export async function updateBookingStatusAction(
   id: string,

@@ -12,7 +12,7 @@ import { ImportDefaultTeamButton } from "@/components/admin/ImportDefaultTeamBut
 import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import type { AdminAboutTeamMember } from "@/lib/about-team";
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { StaffRole } from "@/lib/auth/staff";
 
 type Filter = "all" | "published" | "draft";
 
@@ -61,7 +61,7 @@ function MemberRow({ member, role }: { member: AdminAboutTeamMember; role: Staff
               width={48}
               height={48}
               className="h-12 w-12 object-cover object-top"
-              unoptimized={!member.image.includes("supabase.co")}
+              unoptimized={!member.image.includes("/media/")}
             />
           ) : (
             <span className="admin-tour-thumb-empty" aria-hidden>

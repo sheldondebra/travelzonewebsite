@@ -9,7 +9,7 @@ import {
 } from "@/lib/contact-messages-store";
 import { sendSms } from "@/lib/splitsms";
 import { getEmailDeliveryConfig, getSplitSmsConfig } from "@/lib/site-settings";
-import { requireAdmin, requireStaff } from "@/lib/supabase/auth";
+import { requireAdmin, requireStaff } from "@/lib/auth/staff";
 
 export type MessageReplyResult =
   | { success: true; message: string }

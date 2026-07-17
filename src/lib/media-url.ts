@@ -10,15 +10,10 @@ const NEXT_IMAGE_HOSTS = new Set(["images.unsplash.com"]);
 function isAllowedRemoteImageUrl(url: string) {
   try {
     const parsed = new URL(url);
-    if (NEXT_IMAGE_HOSTS.has(parsed.hostname)) return true;
-    return parsed.hostname.endsWith(".supabase.co");
+    return NEXT_IMAGE_HOSTS.has(parsed.hostname);
   } catch {
     return false;
   }
-}
-
-function getSupabaseBaseUrl() {
-  return process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "") ?? null;
 }
 
 function replaceBrokenUnsplashUrls(image: string) {
@@ -31,7 +26,7 @@ function replaceBrokenUnsplashUrls(image: string) {
   return resolved;
 }
 
-function extractMediaStoragePath(value: string): string | null {
+function extractLegacyStoragePath(value: string): string | null {
   const patterns = [
     /\/storage\/v1\/object\/public\/media\/(.+)$/i,
     /^media\/(.+)$/i,
@@ -45,38 +40,25 @@ function extractMediaStoragePath(value: string): string | null {
   return null;
 }
 
-function supabasePublicUrl(storagePath: string) {
-  const baseUrl = getSupabaseBaseUrl();
-  if (!baseUrl) return null;
-  return `${baseUrl}/storage/v1/object/public/media/${storagePath}`;
-}
-
-function rewriteKnownStorageUrl(url: string) {
-  const storagePath = extractMediaStoragePath(url);
-  if (!storagePath) return url;
-
-  const rewritten = supabasePublicUrl(storagePath);
-  return rewritten ?? url;
-}
-
 function normalizeAbsoluteUrl(url: string) {
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.toLowerCase();
 
     if (host === "localhost" || host === "127.0.0.1") {
-      const storagePath = extractMediaStoragePath(parsed.pathname);
+      const storagePath = extractLegacyStoragePath(parsed.pathname);
       if (storagePath) {
-        return supabasePublicUrl(storagePath) ?? parsed.pathname;
+        return `/media/${storagePath}`;
       }
 
-      if (parsed.pathname.startsWith("/images/")) {
+      if (parsed.pathname.startsWith("/images/") || parsed.pathname.startsWith("/media/")) {
         return parsed.pathname;
       }
     }
 
     if (host.endsWith(".supabase.co")) {
-      return rewriteKnownStorageUrl(url);
+      const storagePath = extractLegacyStoragePath(url);
+      if (storagePath) return `/media/${storagePath}`;
     }
 
     return replaceBrokenUnsplashUrls(url);
@@ -95,6 +77,7 @@ export function normalizeMediaUrl(image: string | null | undefined, fallback?: s
   if (resolved.startsWith("http://") || resolved.startsWith("https://")) {
     resolved = normalizeAbsoluteUrl(resolved);
     if (!resolved || !isAllowedRemoteImageUrl(resolved)) {
+      if (resolved.startsWith("/")) return resolved;
       return defaultFallback;
     }
     return resolved;
@@ -103,6 +86,7 @@ export function normalizeMediaUrl(image: string | null | undefined, fallback?: s
   if (resolved.startsWith("//")) {
     const absolute = normalizeAbsoluteUrl(`https:${resolved}`);
     if (!absolute || !isAllowedRemoteImageUrl(absolute)) {
+      if (absolute.startsWith("/")) return absolute;
       return defaultFallback;
     }
     return absolute;
@@ -118,12 +102,17 @@ export function normalizeMediaUrl(image: string | null | undefined, fallback?: s
     return `/${resolved}`;
   }
 
-  const storagePath = extractMediaStoragePath(resolved);
+  const storagePath = extractLegacyStoragePath(resolved);
   if (storagePath) {
-    return supabasePublicUrl(storagePath) ?? defaultFallback;
+    return `/media/${storagePath}`;
   }
 
   return resolved || defaultFallback;
+}
+
+/** Image src safe for next/image — always local or an allowed remote host. */
+export function getNextImageSrc(image: string | null | undefined, fallback?: string) {
+  return normalizeMediaUrl(image, fallback);
 }
 
 export function normalizeMediaUrls(urls: string[] | null | undefined) {

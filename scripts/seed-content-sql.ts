@@ -1,4 +1,3 @@
-import postgres from "postgres";
 import {
   paragraphsToHtml,
   staticBlogPosts,
@@ -6,6 +5,7 @@ import {
 } from "@/lib/seed-data";
 import { getDatabaseUrl } from "./db-url";
 import { loadLocalEnv } from "./load-env";
+import { createPostgresClient } from "./postgres-client";
 
 loadLocalEnv();
 
@@ -15,7 +15,7 @@ async function seedContent() {
     throw new Error("DATABASE_URL or SUPABASE_DB_PASSWORD is required.");
   }
 
-  const sql = postgres(databaseUrl, { max: 1 });
+  const sql = createPostgresClient(databaseUrl);
   const publishedAt = new Date().toISOString();
 
   try {

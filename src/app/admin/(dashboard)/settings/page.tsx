@@ -4,7 +4,7 @@ import { SettingsForm } from "@/components/admin/SettingsForm";
 import { appUrl } from "@/lib/paystack";
 import { getSplitSmsBalance } from "@/lib/splitsms";
 import { getAdminSettingsView } from "@/lib/site-settings";
-import { requireAdmin } from "@/lib/supabase/auth";
+import { requireAdmin } from "@/lib/auth/staff";
 
 function SettingsFormFallback() {
   return (

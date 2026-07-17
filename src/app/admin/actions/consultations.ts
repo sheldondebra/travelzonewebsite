@@ -5,7 +5,7 @@ import type { ConsultationStatus } from "@/lib/consultations";
 import { parseAvailabilityFormData } from "@/lib/consultation-availability";
 import { updateConsultationStatus } from "@/lib/consultations-store";
 import { saveConsultationAvailabilitySettings } from "@/lib/site-settings";
-import { requireAdmin, requireStaff } from "@/lib/supabase/auth";
+import { requireAdmin, requireStaff } from "@/lib/auth/staff";
 
 export type ConsultationAvailabilityResult =
   | { success: true; message: string }

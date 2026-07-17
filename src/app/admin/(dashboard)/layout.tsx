@@ -3,7 +3,7 @@ import { AdminSetupBanner } from "@/components/admin/AdminSetupBanner";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { getSplitSmsBalance } from "@/lib/splitsms";
 import { getAdminSettingsView } from "@/lib/site-settings";
-import { requireStaff } from "@/lib/supabase/auth";
+import { requireStaff } from "@/lib/auth/staff";
 
 export default async function AdminDashboardLayout({
   children,

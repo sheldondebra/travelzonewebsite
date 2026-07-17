@@ -1,9 +1,10 @@
 import { randomUUID } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import { createClient } from "@supabase/supabase-js";
 import type { ContactMessage } from "@/lib/contact-messages";
-import { isMissingTableError } from "@/lib/supabase/db-errors";
+import { isDatabaseConfigured } from "@/lib/db/config";
+import { isMissingTableError } from "@/lib/db/errors";
+import { getSql } from "@/lib/db/postgres";
 
 const MESSAGES_DIR = path.join(process.cwd(), "data");
 const MESSAGES_FILE = path.join(MESSAGES_DIR, "contact-messages.json");
@@ -22,26 +23,6 @@ async function writeAll(messages: ContactMessage[]) {
   await writeFile(MESSAGES_FILE, JSON.stringify(messages, null, 2));
 }
 
-function supabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
-function toRow(message: ContactMessage) {
-  return {
-    id: message.id,
-    full_name: message.fullName,
-    email: message.email,
-    phone: message.phone,
-    subject: message.subject,
-    message: message.message,
-    status: message.status,
-    created_at: message.createdAt,
-  };
-}
-
 function fromRow(row: Record<string, unknown>): ContactMessage {
   return {
     id: row.id as string,
@@ -56,19 +37,34 @@ function fromRow(row: Record<string, unknown>): ContactMessage {
 }
 
 export async function saveContactMessage(message: ContactMessage) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { error } = await supabase.from("contact_messages").upsert(toRow(message));
-    if (error) {
-      if (isMissingTableError(error)) {
-        const messages = await readAll();
-        messages.push(message);
-        await writeAll(messages);
-        return;
-      }
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      await sql`
+        insert into public.contact_messages (
+          id, full_name, email, phone, subject, message, status, created_at
+        ) values (
+          ${message.id},
+          ${message.fullName},
+          ${message.email},
+          ${message.phone},
+          ${message.subject},
+          ${message.message},
+          ${message.status},
+          ${message.createdAt}
+        )
+        on conflict (id) do update set
+          full_name = excluded.full_name,
+          email = excluded.email,
+          phone = excluded.phone,
+          subject = excluded.subject,
+          message = excluded.message,
+          status = excluded.status
+      `;
+      return;
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return;
   }
 
   const messages = await readAll();
@@ -77,18 +73,16 @@ export async function saveContactMessage(message: ContactMessage) {
 }
 
 export async function getContactMessageById(id: string) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("contact_messages")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-    if (error) {
-      if (isMissingTableError(error)) return null;
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        select * from public.contact_messages where id = ${id} limit 1
+      `;
+      return rows[0] ? fromRow(rows[0]) : null;
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return data ? fromRow(data) : null;
   }
 
   const messages = await readAll();
@@ -96,17 +90,17 @@ export async function getContactMessageById(id: string) {
 }
 
 export async function listContactMessages() {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("contact_messages")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) {
-      if (isMissingTableError(error)) return readAll();
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        select * from public.contact_messages
+        order by created_at desc
+      `;
+      return rows.map((row) => fromRow(row));
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return (data ?? []).map((row) => fromRow(row));
   }
 
   const messages = await readAll();
@@ -119,23 +113,23 @@ export async function updateContactMessageStatus(
   id: string,
   status: ContactMessage["status"],
 ) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("contact_messages")
-      .update({ status })
-      .eq("id", id)
-      .select("*")
-      .single();
-    if (error) {
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        update public.contact_messages
+        set status = ${status}
+        where id = ${id}
+        returning *
+      `;
+      if (!rows[0]) throw new Error("Contact message not found");
+      return fromRow(rows[0]);
+    } catch (error) {
       if (isMissingTableError(error)) {
-        throw new Error(
-          "Contact messages table is not set up. Run supabase/setup-all.sql.",
-        );
+        throw new Error("Contact messages table is not set up. Run npm run db:setup.");
       }
-      throw new Error(error.message);
+      throw error;
     }
-    return fromRow(data);
   }
 
   const messages = await readAll();

@@ -1,90 +1,107 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import {
   paragraphsToHtml,
   staticBlogPosts,
   staticTours,
 } from "@/lib/seed-data";
+import { getDatabaseUrl } from "./db-url";
 import { loadLocalEnv } from "./load-env";
-import { resolveBlogImageUrl } from "./upload-blog-images";
+import { createPostgresClient } from "./postgres-client";
 
 loadLocalEnv();
 
 async function seed() {
-  const missing: string[] = [];
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()) {
-    missing.push("NEXT_PUBLIC_SUPABASE_URL");
-  }
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
-    missing.push("SUPABASE_SERVICE_ROLE_KEY");
-  }
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing in .env.local: ${missing.join(", ")}. Get them from Supabase → Project Settings → API (service_role is under "Project API keys").`,
-    );
+  const databaseUrl = getDatabaseUrl();
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required in .env.local");
   }
 
-  const supabase = createAdminClient();
+  const sql = createPostgresClient(databaseUrl);
+  const publishedAt = new Date().toISOString();
 
-  for (const tour of staticTours) {
-    const { error } = await supabase.from("tours").upsert(
-      {
-        slug: tour.slug,
-        title: tour.title,
-        tagline: tour.tagline,
-        location: tour.location,
-        duration: tour.duration,
-        price: tour.price,
-        currency: tour.currency,
-        price_note: tour.priceNote,
-        travel_period: tour.travelPeriod,
-        image: tour.image,
-        gallery: tour.gallery,
-        description: tour.description,
-        overview: tour.overview,
-        highlights: tour.highlights,
-        included: tour.included,
-        category: tour.category,
-        status: "published",
-        published_at: new Date().toISOString(),
-      },
-      { onConflict: "slug" },
-    );
-    if (error) {
-      if (error.message.includes("Could not find the table")) {
-        throw new Error(
-          `Table missing (${error.message}). Run database setup first:\n` +
-            `  • Open https://supabase.com/dashboard/project/xdegzidfeccjeajedxes/sql/new\n` +
-            `  • Paste and run supabase/setup-all.sql\n` +
-            `  • Then run: npm run seed`,
-        );
-      }
-      throw new Error(`Tour ${tour.slug}: ${error.message}`);
+  try {
+    for (const tour of staticTours) {
+      await sql`
+        insert into public.tours (
+          slug, title, tagline, location, duration, price, currency,
+          price_note, travel_period, image, gallery, description,
+          overview, highlights, included, category, status, published_at
+        ) values (
+          ${tour.slug},
+          ${tour.title},
+          ${tour.tagline},
+          ${tour.location},
+          ${tour.duration},
+          ${tour.price},
+          ${tour.currency},
+          ${tour.priceNote},
+          ${tour.travelPeriod},
+          ${tour.image},
+          ${sql.json(tour.gallery)},
+          ${tour.description},
+          ${sql.json(tour.overview)},
+          ${sql.json(tour.highlights)},
+          ${sql.json(tour.included)},
+          ${tour.category},
+          'published',
+          ${publishedAt}
+        )
+        on conflict (slug) do update set
+          title = excluded.title,
+          tagline = excluded.tagline,
+          location = excluded.location,
+          duration = excluded.duration,
+          price = excluded.price,
+          currency = excluded.currency,
+          price_note = excluded.price_note,
+          travel_period = excluded.travel_period,
+          image = excluded.image,
+          gallery = excluded.gallery,
+          description = excluded.description,
+          overview = excluded.overview,
+          highlights = excluded.highlights,
+          included = excluded.included,
+          category = excluded.category,
+          status = excluded.status,
+          published_at = excluded.published_at,
+          updated_at = now()
+      `;
     }
-  }
 
-  for (const post of staticBlogPosts) {
-    const image = await resolveBlogImageUrl(post.image);
-    const { error } = await supabase.from("blog_posts").upsert(
-      {
-        slug: post.slug,
-        title: post.title,
-        excerpt: post.excerpt,
-        body_html: paragraphsToHtml(post.content),
-        image,
-        category: post.category,
-        read_time: post.readTime,
-        display_date: post.date,
-        status: "published",
-        published_at: new Date().toISOString(),
-      },
-      { onConflict: "slug" },
-    );
-    if (error) throw new Error(`Blog ${post.slug}: ${error.message}`);
-  }
+    for (const post of staticBlogPosts) {
+      await sql`
+        insert into public.blog_posts (
+          slug, title, excerpt, body_html, image, category,
+          read_time, display_date, status, published_at
+        ) values (
+          ${post.slug},
+          ${post.title},
+          ${post.excerpt},
+          ${paragraphsToHtml(post.content)},
+          ${post.image},
+          ${post.category},
+          ${post.readTime},
+          ${post.date},
+          'published',
+          ${publishedAt}
+        )
+        on conflict (slug) do update set
+          title = excluded.title,
+          excerpt = excluded.excerpt,
+          body_html = excluded.body_html,
+          image = excluded.image,
+          category = excluded.category,
+          read_time = excluded.read_time,
+          display_date = excluded.display_date,
+          status = excluded.status,
+          published_at = excluded.published_at,
+          updated_at = now()
+      `;
+    }
 
-  console.log(
-    `Seeded ${staticTours.length} tours and ${staticBlogPosts.length} blog posts.`,
-  );
+    console.log(`Seeded ${staticTours.length} tours and ${staticBlogPosts.length} blog posts.`);
+  } finally {
+    await sql.end();
+  }
 }
 
 seed().catch((error) => {

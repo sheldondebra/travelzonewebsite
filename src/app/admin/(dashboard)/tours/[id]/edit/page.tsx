@@ -5,7 +5,7 @@ import { AdminSavedQueryToast } from "@/components/admin/AdminSavedQueryToast";
 import { DeleteTourButton } from "@/components/admin/DeleteTourButton";
 import { TourForm } from "@/components/admin/TourForm";
 import { getAdminTour } from "@/lib/content-admin";
-import { requireStaff } from "@/lib/supabase/auth";
+import { requireStaff } from "@/lib/auth/staff";
 
 type Props = {
   params: Promise<{ id: string }>;

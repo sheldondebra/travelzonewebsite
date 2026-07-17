@@ -6,7 +6,7 @@ import { createStaffAction } from "@/app/admin/actions/users";
 import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
 import { AdminWidget } from "@/components/admin/AdminChrome";
 import { RoleCapabilities } from "@/components/admin/UsersList";
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { StaffRole } from "@/lib/auth/staff";
 import { getStaffRoleLabel, STAFF_ROLE_OPTIONS } from "@/lib/staff-roles";
 
 type Props = {
@@ -21,18 +21,13 @@ export function StaffUserForm({
   showCancel = true,
 }: Props) {
   const [role, setRole] = useState<StaffRole>("editor");
-  const [sendInvite, setSendInvite] = useState(variant === "compact");
   const [state, formAction, pending] = useActionState(createStaffAction, undefined);
 
   useAdminActionFeedback(state, pending, {
-    loadingMessage: sendInvite ? "Sending invitation…" : "Adding user…",
+    loadingMessage: "Adding user…",
   });
 
-  const submitLabel = pending
-    ? "Adding…"
-    : sendInvite
-      ? "Send invitation"
-      : "Add user";
+  const submitLabel = pending ? "Adding…" : "Add user";
 
   const formFields = (
     <>
@@ -76,45 +71,24 @@ export function StaffUserForm({
         </div>
 
         <div className={variant === "compact" ? "sm:col-span-2" : undefined}>
-          <label className="admin-settings-toggle">
-            <input
-              type="checkbox"
-              name="sendInvite"
-              checked={sendInvite}
-              onChange={(event) => setSendInvite(event.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[#2271b1]"
-            />
-            <span>
-              <span className="block text-[13px] font-semibold text-[#1d2327]">
-                Send invitation email
-              </span>
-              <span className="admin-field-hint mt-0.5 block">
-                Email a link to set their password instead of creating one here.
-              </span>
-            </span>
+          <label htmlFor="staff-password" className="admin-label">
+            Password <span className="text-[#d63638]">(required)</span>
           </label>
+          <input
+            id="staff-password"
+            name="password"
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+            className={`admin-input ${variant === "full" ? "max-w-md" : ""}`}
+          />
+          {variant === "full" ? (
+            <p className="admin-field-hint">
+              Minimum 8 characters. Share this password with the user securely.
+            </p>
+          ) : null}
         </div>
-
-        {!sendInvite ? (
-          <div className={variant === "compact" ? "sm:col-span-2" : undefined}>
-            <label htmlFor="staff-password" className="admin-label">
-              Password <span className="text-[#d63638]">(required)</span>
-            </label>
-            <input
-              id="staff-password"
-              name="password"
-              type="password"
-              minLength={8}
-              autoComplete="new-password"
-              className={`admin-input ${variant === "full" ? "max-w-md" : ""}`}
-            />
-            {variant === "full" ? (
-              <p className="admin-field-hint">
-                Minimum 8 characters. Share this password with the user securely.
-              </p>
-            ) : null}
-          </div>
-        ) : null}
       </div>
 
       <div className={`flex flex-wrap gap-2 ${variant === "full" ? "pt-1" : "pt-2"}`}>

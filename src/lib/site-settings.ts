@@ -1,5 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
-import { isMissingTableError } from "@/lib/supabase/db-errors";
+import { isMissingTableError } from "@/lib/db/errors";
+import { getSql } from "@/lib/db/postgres";
 import type {
   AdminSettingsView,
   ConsultationAvailabilitySettings,
@@ -105,27 +105,25 @@ async function loadRawSettingsRow(): Promise<{
   revision: string;
 }> {
   try {
-    const supabase = createAdminClient();
-    const { data, error } = await supabase
-      .from("site_settings")
-      .select("data, updated_at")
-      .eq("id", "default")
-      .maybeSingle();
+    const sql = getSql();
+    const rows = await sql`
+      select data, updated_at
+      from public.site_settings
+      where id = 'default'
+      limit 1
+    `;
 
-    if (error) {
-      if (isMissingTableError(error)) return { data: null, revision: "none" };
-      throw new Error(error.message);
-    }
-
-    if (!data?.data || typeof data.data !== "object") {
-      return { data: null, revision: data?.updated_at ?? "none" };
+    const row = rows[0];
+    if (!row?.data || typeof row.data !== "object") {
+      return { data: null, revision: (row?.updated_at as string) ?? "none" };
     }
 
     return {
-      data: data.data as Partial<SiteSettings>,
-      revision: data.updated_at ?? "none",
+      data: row.data as Partial<SiteSettings>,
+      revision: (row.updated_at as string) ?? "none",
     };
-  } catch {
+  } catch (error) {
+    if (isMissingTableError(error)) return { data: null, revision: "none" };
     return { data: null, revision: "none" };
   }
 }
@@ -229,23 +227,21 @@ export async function getAdminSettingsView(): Promise<AdminSettingsView> {
 }
 
 async function persistSettings(settings: SiteSettings, userId: string) {
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("site_settings").upsert(
-    {
-      id: "default",
-      data: settings,
-      updated_by: userId,
-    },
-    { onConflict: "id" },
-  );
-
-  if (error) {
+  try {
+    const sql = getSql();
+    await sql`
+      insert into public.site_settings (id, data, updated_by)
+      values ('default', ${sql.json(settings)}, ${userId}::uuid)
+      on conflict (id) do update set
+        data = excluded.data,
+        updated_by = excluded.updated_by,
+        updated_at = now()
+    `;
+  } catch (error) {
     if (isMissingTableError(error)) {
-      throw new Error(
-        "Settings table is missing. Run supabase/setup-all.sql in the Supabase SQL Editor.",
-      );
+      throw new Error("Settings table is missing. Run npm run db:setup.");
     }
-    throw new Error(error.message);
+    throw error;
   }
 }
 

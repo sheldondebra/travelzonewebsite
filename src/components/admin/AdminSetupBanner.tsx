@@ -1,44 +1,34 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { isMissingTableError } from "@/lib/supabase/db-errors";
 import { AdminNotice } from "@/components/admin/AdminChrome";
+import { isDatabaseConfigured } from "@/lib/db/config";
+import { isMissingTableError } from "@/lib/db/errors";
+import { getSql } from "@/lib/db/postgres";
 
 export async function isDatabaseSetupNeeded() {
-  const supabase = await createClient();
-  const { error } = await supabase.from("tours").select("id", { head: true, count: "exact" });
-  return Boolean(error && isMissingTableError(error));
+  if (!isDatabaseConfigured()) return true;
+
+  try {
+    await getSql()`select id from public.tours limit 1`;
+    return false;
+  } catch (error) {
+    return isMissingTableError(error);
+  }
 }
 
 export async function AdminSetupBanner() {
   const needed = await isDatabaseSetupNeeded();
   if (!needed) return null;
 
-  const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(
-    /https:\/\/([^.]+)\.supabase\.co/,
-  )?.[1];
-  const sqlEditorUrl = projectRef
-    ? `https://supabase.com/dashboard/project/${projectRef}/sql/new`
-    : "https://supabase.com/dashboard";
-
   return (
     <AdminNotice variant="warning">
       <p className="font-semibold">Database setup required</p>
       <p className="mt-1">
-        Admin tables are not created yet. Either run{" "}
+        Admin tables are not created yet. Run{" "}
         <code className="bg-[#f0f0f1] px-1">npm run bootstrap</code> locally
-        (requires <code className="bg-[#f0f0f1] px-1">DATABASE_URL</code> or{" "}
-        <code className="bg-[#f0f0f1] px-1">SUPABASE_DB_PASSWORD</code> in{" "}
-        <code className="bg-[#f0f0f1] px-1">.env.local</code>), or paste{" "}
-        <code className="bg-[#f0f0f1] px-1">supabase/setup-all.sql</code> in the{" "}
-        <a
-          href={sqlEditorUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#2271b1] hover:text-[#135e96]"
-        >
-          Supabase SQL Editor
-        </a>
-        , then run <code className="bg-[#f0f0f1] px-1">npm run seed</code>.
+        (requires <code className="bg-[#f0f0f1] px-1">DATABASE_URL</code> in{" "}
+        <code className="bg-[#f0f0f1] px-1">.env.local</code>), then{" "}
+        <code className="bg-[#f0f0f1] px-1">npm run create-admin</code> to add
+        your first admin user.
       </p>
       <p className="mt-2">
         <Link href="/admin/setup" className="text-[#2271b1] hover:text-[#135e96]">

@@ -1,9 +1,10 @@
 import { randomUUID } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import { createClient } from "@supabase/supabase-js";
 import type { ConsultationBooking } from "@/lib/consultations";
-import { isMissingTableError } from "@/lib/supabase/db-errors";
+import { isDatabaseConfigured } from "@/lib/db/config";
+import { isMissingTableError } from "@/lib/db/errors";
+import { getSql } from "@/lib/db/postgres";
 
 const CONSULTATIONS_DIR = path.join(process.cwd(), "data");
 const CONSULTATIONS_FILE = path.join(CONSULTATIONS_DIR, "consultations.json");
@@ -20,29 +21,6 @@ async function readAll(): Promise<ConsultationBooking[]> {
 async function writeAll(bookings: ConsultationBooking[]) {
   await mkdir(CONSULTATIONS_DIR, { recursive: true });
   await writeFile(CONSULTATIONS_FILE, JSON.stringify(bookings, null, 2));
-}
-
-function supabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
-function toRow(booking: ConsultationBooking) {
-  return {
-    id: booking.id,
-    full_name: booking.fullName,
-    email: booking.email,
-    phone: booking.phone,
-    preferred_date: booking.preferredDate,
-    preferred_time: booking.preferredTime,
-    topic: booking.topic,
-    mode: booking.mode,
-    notes: booking.notes ?? null,
-    status: booking.status,
-    created_at: booking.createdAt,
-  };
 }
 
 function fromRow(row: Record<string, unknown>): ConsultationBooking {
@@ -62,21 +40,41 @@ function fromRow(row: Record<string, unknown>): ConsultationBooking {
 }
 
 export async function saveConsultation(booking: ConsultationBooking) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { error } = await supabase.from("consultation_bookings").upsert(toRow(booking));
-    if (error) {
-      if (isMissingTableError(error)) {
-        const bookings = await readAll();
-        const index = bookings.findIndex((item) => item.id === booking.id);
-        if (index >= 0) bookings[index] = booking;
-        else bookings.push(booking);
-        await writeAll(bookings);
-        return;
-      }
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      await sql`
+        insert into public.consultation_bookings (
+          id, full_name, email, phone, preferred_date, preferred_time,
+          topic, mode, notes, status, created_at
+        ) values (
+          ${booking.id},
+          ${booking.fullName},
+          ${booking.email},
+          ${booking.phone},
+          ${booking.preferredDate},
+          ${booking.preferredTime},
+          ${booking.topic},
+          ${booking.mode},
+          ${booking.notes ?? null},
+          ${booking.status},
+          ${booking.createdAt}
+        )
+        on conflict (id) do update set
+          full_name = excluded.full_name,
+          email = excluded.email,
+          phone = excluded.phone,
+          preferred_date = excluded.preferred_date,
+          preferred_time = excluded.preferred_time,
+          topic = excluded.topic,
+          mode = excluded.mode,
+          notes = excluded.notes,
+          status = excluded.status
+      `;
+      return;
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return;
   }
 
   const bookings = await readAll();
@@ -87,18 +85,16 @@ export async function saveConsultation(booking: ConsultationBooking) {
 }
 
 export async function getConsultationById(id: string) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("consultation_bookings")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-    if (error) {
-      if (isMissingTableError(error)) return null;
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        select * from public.consultation_bookings where id = ${id} limit 1
+      `;
+      return rows[0] ? fromRow(rows[0]) : null;
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return data ? fromRow(data) : null;
   }
 
   const bookings = await readAll();
@@ -106,17 +102,17 @@ export async function getConsultationById(id: string) {
 }
 
 export async function listConsultations() {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("consultation_bookings")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) {
-      if (isMissingTableError(error)) return [];
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        select * from public.consultation_bookings
+        order by created_at desc
+      `;
+      return rows.map((row) => fromRow(row));
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return (data ?? []).map((row) => fromRow(row));
   }
 
   const bookings = await readAll();
@@ -129,28 +125,28 @@ export async function updateConsultationStatus(
   id: string,
   status: ConsultationBooking["status"],
 ) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("consultation_bookings")
-      .update({ status })
-      .eq("id", id)
-      .select("*")
-      .single();
-    if (error) {
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        update public.consultation_bookings
+        set status = ${status}
+        where id = ${id}
+        returning *
+      `;
+      if (!rows[0]) throw new Error("Consultation not found");
+      return fromRow(rows[0]);
+    } catch (error) {
       if (isMissingTableError(error)) {
-        throw new Error(
-          "Consultation bookings table is not set up. Run supabase/setup-all.sql.",
-        );
+        throw new Error("Consultation bookings table is not set up. Run npm run db:setup.");
       }
-      throw new Error(error.message);
+      throw error;
     }
-    return fromRow(data);
   }
 
   const bookings = await readAll();
   const index = bookings.findIndex((item) => item.id === id);
-  if (index < 0) throw new Error("Consultation booking not found");
+  if (index < 0) throw new Error("Consultation not found");
   bookings[index] = { ...bookings[index], status };
   await writeAll(bookings);
   return bookings[index];

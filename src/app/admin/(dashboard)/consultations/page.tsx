@@ -1,7 +1,7 @@
 import { ConsultationsDashboard } from "@/components/admin/ConsultationsDashboard";
 import { listConsultations } from "@/lib/consultations-store";
 import { getConsultationAvailability } from "@/lib/site-settings";
-import { requireStaff } from "@/lib/supabase/auth";
+import { requireStaff } from "@/lib/auth/staff";
 
 export default async function AdminConsultationsPage() {
   await requireStaff();

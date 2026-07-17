@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AboutTeamMemberForm } from "@/components/admin/AboutTeamMemberForm";
 import { AdminPageHeader } from "@/components/admin/AdminChrome";
-import { requireStaff } from "@/lib/supabase/auth";
+import { requireStaff } from "@/lib/auth/staff";
 
 export default async function AdminNewAboutTeamMemberPage() {
   await requireStaff();

@@ -1,8 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { compressImage } from "@/lib/image-compress";
-import { requireStaff } from "@/lib/supabase/auth";
+import { requireStaff } from "@/lib/auth/staff";
+import { saveMediaFile } from "@/lib/media-storage";
 
 const ALLOWED_UPLOAD_ROOTS = new Set(["blog", "tours", "team", "uploads"]);
 
@@ -41,24 +41,16 @@ async function uploadOne(file: File, folder: string): Promise<UploadResult> {
   }
 
   const raw = Buffer.from(await file.arrayBuffer());
-  const { buffer, contentType, ext } = await compressImage(raw);
-  const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { buffer, ext } = await compressImage(raw);
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-  const supabase = await createClient();
-  const { error } = await supabase.storage.from("media").upload(path, buffer, {
-    contentType,
-    upsert: false,
-  });
-
-  if (error) {
-    return { success: false, error: error.message };
+  try {
+    const url = await saveMediaFile(folder, filename, buffer);
+    return { success: true, url };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Upload failed.";
+    return { success: false, error: message };
   }
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("media").getPublicUrl(path);
-
-  return { success: true, url: publicUrl };
 }
 
 export async function uploadMediaAction(formData: FormData): Promise<UploadResult> {

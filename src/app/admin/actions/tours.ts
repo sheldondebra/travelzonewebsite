@@ -10,7 +10,7 @@ import {
 import type { ContentStatus, TourInput } from "@/lib/content-types";
 import { normalizeMediaUrl, normalizeMediaUrls } from "@/lib/media-url";
 import { slugify } from "@/lib/slugify";
-import { requireAdmin, requireStaff } from "@/lib/supabase/auth";
+import { requireAdmin, requireStaff } from "@/lib/auth/staff";
 
 export type TourActionResult =
   | { success: true; message: string }

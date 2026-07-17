@@ -10,7 +10,7 @@ import {
 import type { BlogPostInput, ContentStatus } from "@/lib/content-types";
 import { normalizeMediaUrl } from "@/lib/media-url";
 import { sanitizeBlogHtml } from "@/lib/sanitize-html";
-import { requireAdmin, requireStaff } from "@/lib/supabase/auth";
+import { requireAdmin, requireStaff } from "@/lib/auth/staff";
 
 export type BlogActionResult =
   | { success: true; message: string }

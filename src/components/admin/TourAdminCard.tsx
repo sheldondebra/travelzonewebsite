@@ -3,7 +3,7 @@ import Link from "next/link";
 import { DeleteTourButton } from "@/components/admin/DeleteTourButton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import type { AdminTour } from "@/lib/content-types";
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { StaffRole } from "@/lib/auth/staff";
 import { formatPrice } from "@/lib/tours";
 
 type Props = {

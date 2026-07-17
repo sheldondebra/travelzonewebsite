@@ -10,7 +10,7 @@ import {
   saveSmtpSettings,
   saveSplitSmsSettings,
 } from "@/lib/site-settings";
-import { requireAdmin } from "@/lib/supabase/auth";
+import { requireAdmin } from "@/lib/auth/staff";
 
 export type SettingsActionResult =
   | { success: true; message: string }

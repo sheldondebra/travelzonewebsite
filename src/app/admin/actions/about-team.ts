@@ -9,7 +9,7 @@ import {
   updateAboutTeamMemberStatus,
 } from "@/lib/about-team-store";
 import type { ContentStatus } from "@/lib/content-types";
-import { requireAdmin, requireStaff } from "@/lib/supabase/auth";
+import { requireAdmin, requireStaff } from "@/lib/auth/staff";
 
 export type AboutTeamActionResult =
   | { success: true; message: string }

@@ -16,7 +16,7 @@ import {
   HiUserGroup,
   HiUsers,
 } from "react-icons/hi2";
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { StaffRole } from "@/lib/auth/staff";
 
 type MenuItem = {
   href: string;

@@ -1,7 +1,7 @@
 import { AdminPageHeader } from "@/components/admin/AdminChrome";
 import { ExportNewsletterButton } from "@/components/admin/ExportNewsletterButton";
 import { listNewsletterSubscribers } from "@/lib/newsletter-store";
-import { requireStaff } from "@/lib/supabase/auth";
+import { requireStaff } from "@/lib/auth/staff";
 
 export default async function AdminNewsletterPage() {
   await requireStaff();

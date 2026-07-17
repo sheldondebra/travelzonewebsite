@@ -13,7 +13,7 @@ import {
 } from "@/components/admin/AdminToastProvider";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import type { AdminTour } from "@/lib/content-types";
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { StaffRole } from "@/lib/auth/staff";
 import { formatPrice } from "@/lib/tours";
 
 type Filter = "all" | "published" | "draft";
@@ -39,7 +39,7 @@ function TourThumbnail({ tour }: { tour: AdminTour }) {
       width={48}
       height={48}
       className="h-12 w-12 object-cover"
-      unoptimized={!tour.image.includes("supabase.co") && !tour.image.includes("unsplash.com")}
+      unoptimized={!tour.image.includes("/media/") && !tour.image.includes("unsplash.com")}
     />
   );
 }

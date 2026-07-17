@@ -6,7 +6,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { bookingAmountLabel, formatBookingDateTime, formatTravelDate } from "@/lib/booking-admin";
 import { getBookingById } from "@/lib/bookings-store";
 import { formatPrice } from "@/lib/tours";
-import { getStaffUser } from "@/lib/supabase/auth";
+import { getStaffUser } from "@/lib/auth/staff";
 
 type Props = {
   params: Promise<{ id: string }>;

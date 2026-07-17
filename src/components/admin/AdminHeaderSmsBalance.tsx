@@ -8,7 +8,7 @@ import {
   type SplitSmsBalanceActionResult,
 } from "@/app/admin/actions/settings";
 import type { SplitSmsBalance } from "@/lib/splitsms";
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { StaffRole } from "@/lib/auth/staff";
 
 type Props = {
   role: StaffRole;

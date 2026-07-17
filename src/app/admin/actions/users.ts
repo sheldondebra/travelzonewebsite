@@ -1,13 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin, type StaffRole } from "@/lib/supabase/auth";
 import {
-  deleteStaffUserRecord,
+  createStaffUser,
+  deleteStaffUser,
+  listActiveStaffUsers,
+  requireAdmin,
   updateStaffUserRole,
-  upsertStaffUserRecord,
-} from "@/lib/staff-users";
+  type StaffRole,
+} from "@/lib/auth/staff";
 import { isStaffRole } from "@/lib/staff-roles";
 
 export type UsersActionResult =
@@ -16,16 +17,9 @@ export type UsersActionResult =
 
 export async function listStaffUsers() {
   await requireAdmin();
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("users")
-    .select("id, email, role, created_at")
-    .eq("is_active", true)
-    .order("email");
+  const users = await listActiveStaffUsers();
 
-  if (error) throw new Error(error.message);
-
-  return (data ?? []).map((user) => ({
+  return users.map((user) => ({
     id: user.id,
     email: user.email,
     role: user.role as StaffRole,
@@ -41,7 +35,6 @@ export async function createStaffAction(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const roleValue = String(formData.get("role") ?? "editor");
-  const sendInvite = formData.get("sendInvite") === "on";
 
   if (!email) {
     return { success: false, error: "Email address is required." };
@@ -51,71 +44,14 @@ export async function createStaffAction(
     return { success: false, error: "Choose a valid role." };
   }
 
-  const admin = createAdminClient();
-  const appUrl = process.env.APP_URL ?? "http://localhost:3000";
-
-  if (sendInvite) {
-    if (password) {
-      return {
-        success: false,
-        error: "Leave the password blank when sending an invitation email.",
-      };
-    }
-
-    const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${appUrl}/admin/auth/callback?next=/admin/reset-password`,
-    });
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    if (data.user) {
-      const { error: updateError } = await admin.auth.admin.updateUserById(
-        data.user.id,
-        { app_metadata: { role: roleValue } },
-      );
-      if (updateError) {
-        return { success: false, error: updateError.message };
-      }
-
-      await upsertStaffUserRecord({
-        id: data.user.id,
-        email: data.user.email ?? email,
-        role: roleValue,
-      });
-    }
-
-    revalidatePath("/admin");
-    revalidatePath("/admin/users");
-    return { success: true, message: "Invitation sent." };
-  }
-
   if (password.length < 8) {
     return {
       success: false,
-      error: "Password must be at least 8 characters, or send an invitation instead.",
+      error: "Password must be at least 8 characters.",
     };
   }
 
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    app_metadata: { role: roleValue },
-  });
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  if (data.user) {
-    await upsertStaffUserRecord({
-      id: data.user.id,
-      email: data.user.email ?? email,
-      role: roleValue,
-    });
-  }
+  await createStaffUser({ email, password, role: roleValue });
 
   revalidatePath("/admin");
   revalidatePath("/admin/users");
@@ -148,15 +84,6 @@ export async function updateStaffRoleAction(
     };
   }
 
-  const admin = createAdminClient();
-  const { error } = await admin.auth.admin.updateUserById(userId, {
-    app_metadata: { role: roleValue },
-  });
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
   await updateStaffUserRole(userId, roleValue);
 
   revalidatePath("/admin");
@@ -179,12 +106,7 @@ export async function deleteStaffAction(
     return { success: false, error: "You cannot delete your own account." };
   }
 
-  const admin = createAdminClient();
-  const { error } = await admin.auth.admin.deleteUser(userId);
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
+  await deleteStaffUser(userId);
 
   revalidatePath("/admin");
   revalidatePath("/admin/users");

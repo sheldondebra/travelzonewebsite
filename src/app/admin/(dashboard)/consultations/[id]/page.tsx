@@ -9,7 +9,7 @@ import {
 } from "@/lib/consultation-admin";
 import { getModeLabel, getTimeSlotLabel, getTopicLabel } from "@/lib/consultations";
 import { getConsultationById } from "@/lib/consultations-store";
-import { getStaffUser } from "@/lib/supabase/auth";
+import { getStaffUser } from "@/lib/auth/staff";
 
 type Props = {
   params: Promise<{ id: string }>;

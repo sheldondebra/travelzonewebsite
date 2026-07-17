@@ -6,8 +6,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { JsonLd } from "@/components/JsonLd";
 import { BlogPostCta } from "@/components/BlogPostCta";
-import { getBlogPostBySlug, getPublishedBlogPosts } from "@/lib/content";
+import { getBlogPostBySlug, getPublishedBlogPosts } from "@/lib/content-public";
 import { parseDisplayDateToIso } from "@/lib/date-utils";
+import { getNextImageSrc } from "@/lib/media-url";
 import { createMetadata } from "@/lib/seo";
 import { blogPostJsonLd, breadcrumbJsonLd } from "@/lib/structured-data";
 
@@ -69,7 +70,7 @@ export default async function BlogPostPage({ params }: Props) {
       <main>
         <section className="relative flex min-h-[45vh] items-end overflow-hidden bg-navy pb-14 pt-32 lg:pt-40">
           <Image
-            src={post.image}
+            src={getNextImageSrc(post.image)}
             alt={post.title}
             fill
             priority
@@ -159,7 +160,7 @@ export default async function BlogPostPage({ params }: Props) {
                 >
                   <div className="relative aspect-[16/10] overflow-hidden">
                     <Image
-                      src={item.image}
+                      src={getNextImageSrc(item.image)}
                       alt={item.title}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"

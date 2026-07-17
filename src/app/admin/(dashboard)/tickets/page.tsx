@@ -1,6 +1,6 @@
 import { TicketRequestsDashboard } from "@/components/admin/TicketRequestsDashboard";
 import { listTicketRequests } from "@/lib/ticket-requests-store";
-import { requireStaff } from "@/lib/supabase/auth";
+import { requireStaff } from "@/lib/auth/staff";
 
 export default async function AdminTicketsPage() {
   await requireStaff();

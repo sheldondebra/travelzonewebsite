@@ -1,6 +1,6 @@
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { getDashboardStats } from "@/lib/content-admin";
-import { requireStaff } from "@/lib/supabase/auth";
+import { requireStaff } from "@/lib/auth/staff";
 
 export default async function AdminDashboardPage({
   searchParams,

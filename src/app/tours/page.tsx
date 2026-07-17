@@ -3,7 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PageHero } from "@/components/PageHero";
 import { TourCard } from "@/components/tours/TourCard";
-import { getPublishedTours } from "@/lib/tours";
+import { getPublishedTours } from "@/lib/content-public";
 import { createMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createMetadata({

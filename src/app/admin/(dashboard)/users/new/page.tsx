@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AddUserForm } from "@/components/admin/AddUserForm";
 import { AdminPageHeader } from "@/components/admin/AdminChrome";
-import { requireAdmin } from "@/lib/supabase/auth";
+import { requireAdmin } from "@/lib/auth/staff";
 
 type Props = {
   searchParams: Promise<{ email?: string }>;

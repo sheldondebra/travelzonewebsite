@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/AdminChrome";
 import { ToursList } from "@/components/admin/ToursList";
 import type { AdminTour } from "@/lib/content-types";
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { StaffRole } from "@/lib/auth/staff";
 
 type Props = {
   tours: AdminTour[];

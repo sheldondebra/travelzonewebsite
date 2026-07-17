@@ -2,14 +2,14 @@ import { Logo } from "@/components/Logo";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/admin/LoginForm";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { isDatabaseConfigured } from "@/lib/db/config";
 
 type Props = {
   searchParams: Promise<{ reset?: string; error?: string }>;
 };
 
 export default async function AdminLoginPage({ searchParams }: Props) {
-  if (!isSupabaseConfigured()) {
+  if (!isDatabaseConfigured()) {
     redirect("/admin/setup");
   }
 

@@ -250,10 +250,5 @@ export type BlogPost = {
   updatedAt?: string;
 };
 
-export {
-  getPublishedBlogPosts,
-  getBlogPostBySlug,
-} from "@/lib/content-public";
-
 /** Static fallback for sitemap and seed script */
 export { staticBlogPosts as blogPosts } from "@/lib/seed-data";

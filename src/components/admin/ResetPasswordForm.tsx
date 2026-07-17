@@ -9,7 +9,7 @@ import {
 } from "@/app/admin/actions/auth";
 import { PasswordInput } from "@/components/admin/PasswordInput";
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({ token }: { token: string }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState<
     UpdatePasswordActionState | undefined,
@@ -32,6 +32,7 @@ export function ResetPasswordForm() {
       </div>
 
       <form action={formAction} className="space-y-4">
+        <input type="hidden" name="token" value={token} />
         {state?.error ? (
           <p className="admin-login-error" role="alert">
             <strong>Error:</strong> {state.error}

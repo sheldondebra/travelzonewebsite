@@ -6,10 +6,18 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PageHero } from "@/components/PageHero";
 import { BlogPagination } from "@/components/BlogPagination";
-import { getPublishedBlogPosts } from "@/lib/content";
+import { getPublishedBlogPosts } from "@/lib/content-public";
+import { getNextImageSrc } from "@/lib/media-url";
 import { createMetadata } from "@/lib/seo";
 
 export const revalidate = 3600;
+
+export const metadata: Metadata = createMetadata({
+  title: "Travel Blog",
+  description:
+    "Ghana travel guides and tips from the Travel Zone team — Cape Coast, Kakum, Mole National Park, group trips, and more.",
+  path: "/blog",
+});
 
 const POSTS_PER_PAGE = 6;
 
@@ -17,39 +25,14 @@ type BlogPageProps = {
   searchParams: Promise<{ page?: string }>;
 };
 
-export async function generateMetadata({
-  searchParams,
-}: BlogPageProps): Promise<Metadata> {
-  const params = (await searchParams) ?? {};
-  const { page: pageParam } = params;
+function parsePageParam(pageParam: string | undefined) {
   const requestedPage = Number.parseInt(pageParam ?? "1", 10);
-  const currentPage =
-    Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-
-  if (currentPage > 1) {
-    return createMetadata({
-      title: `Travel Blog — Page ${currentPage}`,
-      description:
-        "Ghana travel guides and tips from the Travel Zone team — Cape Coast, Kakum, Mole National Park, group trips, and more.",
-      path: `/blog?page=${currentPage}`,
-      noIndex: true,
-    });
-  }
-
-  return createMetadata({
-    title: "Travel Blog",
-    description:
-      "Ghana travel guides and tips from the Travel Zone team — Cape Coast, Kakum, Mole National Park, group trips, and more.",
-    path: "/blog",
-  });
+  return Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 }
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
   const params = (await searchParams) ?? {};
-  const { page: pageParam } = params;
-  const requestedPage = Number.parseInt(pageParam ?? "1", 10);
-  const currentPage =
-    Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const currentPage = parsePageParam(params.page);
 
   const blogPosts = await getPublishedBlogPosts();
   const featured =
@@ -106,7 +89,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
               <article className="group grid overflow-hidden rounded-2xl bg-cream lg:grid-cols-2">
                 <div className="relative aspect-[16/10] lg:aspect-auto lg:min-h-[360px]">
                   <Image
-                    src={featured.image}
+                    src={getNextImageSrc(featured.image)}
                     alt={featured.title}
                     fill
                     priority
@@ -152,7 +135,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                 >
                   <div className="relative aspect-[16/10] overflow-hidden">
                     <Image
-                      src={post.image}
+                      src={getNextImageSrc(post.image)}
                       alt={post.title}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"

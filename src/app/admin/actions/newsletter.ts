@@ -1,7 +1,7 @@
 "use server";
 
 import { listNewsletterSubscribers } from "@/lib/newsletter-store";
-import { requireStaff } from "@/lib/supabase/auth";
+import { requireStaff } from "@/lib/auth/staff";
 
 export async function exportNewsletterCsvAction() {
   await requireStaff();

@@ -7,7 +7,7 @@ import {
   updateStaffRoleAction,
 } from "@/app/admin/actions/users";
 import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { StaffRole } from "@/lib/auth/staff";
 import { getStaffRoleLabel, STAFF_ROLE_OPTIONS, STAFF_ROLES } from "@/lib/staff-roles";
 
 type StaffUser = {

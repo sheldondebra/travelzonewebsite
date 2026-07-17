@@ -1,7 +1,7 @@
-import { randomUUID } from "crypto";
-import postgres from "postgres";
 import { getDatabaseUrl } from "./db-url";
 import { loadLocalEnv } from "./load-env";
+import { createPostgresClient } from "./postgres-client";
+import { hashPassword } from "../src/lib/auth/password";
 
 loadLocalEnv();
 
@@ -16,111 +16,24 @@ async function seedAdmin() {
 
   const databaseUrl = getDatabaseUrl();
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL or SUPABASE_DB_PASSWORD is required.");
+    throw new Error("DATABASE_URL is required in .env.local");
   }
 
-  const sql = postgres(databaseUrl, { max: 1 });
+  const sql = createPostgresClient(databaseUrl);
+  const passwordHash = await hashPassword(password);
 
   try {
-    const existing = await sql<{ id: string; email: string }[]>`
-      select id, email from auth.users where lower(email) = lower(${email})
-    `;
-
-    if (existing.length > 0) {
-      const userId = existing[0].id;
-      await sql`
-        update auth.users
-        set
-          encrypted_password = crypt(${password}, gen_salt('bf')),
-          email_confirmed_at = coalesce(email_confirmed_at, now()),
-          raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb,
-          updated_at = now()
-        where id = ${userId}::uuid
-      `;
-      await sql`
-        insert into public.users (id, email, role)
-        values (${userId}::uuid, lower(${email}), 'admin')
-        on conflict (id) do update set
-          email = excluded.email,
-          role = excluded.role,
-          is_active = true,
-          updated_at = now()
-      `;
-      console.log(`Updated existing admin: ${email}`);
-      return;
-    }
-
-    const userId = randomUUID();
-
-    await sql`
-      insert into auth.users (
-        id,
-        instance_id,
-        aud,
-        role,
-        email,
-        encrypted_password,
-        email_confirmed_at,
-        raw_app_meta_data,
-        raw_user_meta_data,
-        created_at,
-        updated_at,
-        confirmation_token,
-        email_change,
-        email_change_token_new,
-        recovery_token
-      ) values (
-        ${userId}::uuid,
-        '00000000-0000-0000-0000-000000000000'::uuid,
-        'authenticated',
-        'authenticated',
-        ${email},
-        crypt(${password}, gen_salt('bf')),
-        now(),
-        '{"role":"admin"}'::jsonb,
-        '{}'::jsonb,
-        now(),
-        now(),
-        '',
-        '',
-        '',
-        ''
-      )
-    `;
-
-    await sql`
-      insert into auth.identities (
-        id,
-        user_id,
-        identity_data,
-        provider,
-        provider_id,
-        last_sign_in_at,
-        created_at,
-        updated_at
-      ) values (
-        ${userId}::uuid,
-        ${userId}::uuid,
-        ${sql.json({ sub: userId, email })},
-        'email',
-        ${userId},
-        now(),
-        now(),
-        now()
-      )
-    `;
-
-    await sql`
-      insert into public.users (id, email, role)
-      values (${userId}::uuid, lower(${email}), 'admin')
-      on conflict (id) do update set
-        email = excluded.email,
-        role = excluded.role,
+    const rows = await sql<{ email: string }[]>`
+      insert into public.users (email, password_hash, role, is_active)
+      values (lower(${email}), ${passwordHash}, 'admin', true)
+      on conflict ((lower(email))) do update set
+        password_hash = excluded.password_hash,
+        role = 'admin',
         is_active = true,
         updated_at = now()
+      returning email
     `;
-
-    console.log(`Created admin: ${email}`);
+    console.log(`Admin ready: ${rows[0]?.email ?? email}`);
   } finally {
     await sql.end();
   }

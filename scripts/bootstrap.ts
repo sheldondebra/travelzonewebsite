@@ -19,8 +19,8 @@ async function bootstrap() {
     run("db:setup");
   } else {
     console.log(
-      "No DATABASE_URL / SUPABASE_DB_PASSWORD — skipping table setup.\n" +
-        "If tables are missing, run supabase/setup-all.sql in the SQL Editor first.\n",
+      "No DATABASE_URL — skipping table setup.\n" +
+        "Add DATABASE_URL to .env.local, then run npm run bootstrap again.\n",
     );
   }
 

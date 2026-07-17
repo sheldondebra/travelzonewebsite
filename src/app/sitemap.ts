@@ -1,36 +1,35 @@
-import { getPublishedBlogPosts } from "@/lib/content";
-import { getPublishedTours } from "@/lib/tours";
+import { getPublishedBlogPosts } from "@/lib/content-public";
+import { getPublishedTours } from "@/lib/content-public";
+import { isDatabaseConfigured } from "@/lib/db/config";
+import { getSql } from "@/lib/db/postgres";
 import { absoluteUrl } from "@/lib/seo";
-import { isSupabaseConfigured, getSupabaseEnv } from "@/lib/supabase/config";
-import { createClient as createSupabaseJs } from "@supabase/supabase-js";
 
 async function getContentTimestamps() {
-  if (!isSupabaseConfigured()) {
+  if (!isDatabaseConfigured()) {
     return { tours: new Map<string, string>(), posts: new Map<string, string>() };
   }
 
-  const env = getSupabaseEnv();
-  if (!env) {
+  try {
+    const sql = getSql();
+    const [tourRows, postRows] = await Promise.all([
+      sql`select slug, updated_at from public.tours where status = 'published'`,
+      sql`select slug, updated_at from public.blog_posts where status = 'published'`,
+    ]);
+
+    const tours = new Map<string, string>();
+    for (const row of tourRows) {
+      if (row.slug && row.updated_at) tours.set(row.slug as string, row.updated_at as string);
+    }
+
+    const posts = new Map<string, string>();
+    for (const row of postRows) {
+      if (row.slug && row.updated_at) posts.set(row.slug as string, row.updated_at as string);
+    }
+
+    return { tours, posts };
+  } catch {
     return { tours: new Map<string, string>(), posts: new Map<string, string>() };
   }
-
-  const client = createSupabaseJs(env.url, env.anonKey);
-  const [toursResult, postsResult] = await Promise.all([
-    client.from("tours").select("slug, updated_at").eq("status", "published"),
-    client.from("blog_posts").select("slug, updated_at").eq("status", "published"),
-  ]);
-
-  const tours = new Map<string, string>();
-  for (const row of toursResult.data ?? []) {
-    if (row.slug && row.updated_at) tours.set(row.slug, row.updated_at);
-  }
-
-  const posts = new Map<string, string>();
-  for (const row of postsResult.data ?? []) {
-    if (row.slug && row.updated_at) posts.set(row.slug, row.updated_at);
-  }
-
-  return { tours, posts };
 }
 
 export default async function sitemap() {

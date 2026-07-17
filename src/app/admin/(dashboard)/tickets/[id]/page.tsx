@@ -14,7 +14,7 @@ import {
 } from "@/lib/ticket-requests";
 import { getTicketRequestById } from "@/lib/ticket-requests-store";
 import { isEmailConfigured, getSplitSmsConfig } from "@/lib/site-settings";
-import { getStaffUser } from "@/lib/supabase/auth";
+import { getStaffUser } from "@/lib/auth/staff";
 
 type Props = {
   params: Promise<{ id: string }>;

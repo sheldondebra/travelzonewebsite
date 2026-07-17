@@ -47,4 +47,4 @@ This app includes a [`render.yaml`](./render.yaml) blueprint. In the Render dash
 
 **Important:** The GitHub repo root must contain `package.json` (this folder), not a parent monorepo path like `Desktop/`. If Render runs `npm` with no script, the build command field was left empty or set incorrectly.
 
-Add environment variables from [`.env.example`](./.env.example) in Render → Environment (at minimum Supabase, `APP_URL`, and Paystack keys for bookings).
+Add environment variables from [`.env.example`](./.env.example) in Render → Environment (at minimum `DATABASE_URL`, `SESSION_SECRET`, `APP_URL`, and Paystack keys for bookings).

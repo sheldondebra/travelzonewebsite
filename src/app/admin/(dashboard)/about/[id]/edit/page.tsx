@@ -4,7 +4,7 @@ import { AboutTeamMemberForm } from "@/components/admin/AboutTeamMemberForm";
 import { AdminPageHeader } from "@/components/admin/AdminChrome";
 import { AdminSavedQueryToast } from "@/components/admin/AdminSavedQueryToast";
 import { getAdminAboutTeamMember } from "@/lib/about-team-store";
-import { requireStaff } from "@/lib/supabase/auth";
+import { requireStaff } from "@/lib/auth/staff";
 
 type Props = {
   params: Promise<{ id: string }>;

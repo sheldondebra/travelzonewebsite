@@ -2,9 +2,10 @@ import {
   normalizeHtmlImageUrls,
   normalizeMediaUrl,
 } from "@/lib/media-url";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { staticBlogPosts } from "@/lib/seed-data";
+import { getDatabaseUrl } from "./db-url";
 import { loadLocalEnv } from "./load-env";
+import { createPostgresClient } from "./postgres-client";
 import { resolveBlogImageUrl } from "./upload-blog-images";
 
 loadLocalEnv();
@@ -51,18 +52,15 @@ async function resolveReachableImage(image: string, seedImage?: string) {
   return normalizeMediaUrl(DEFAULT_FALLBACK);
 }
 
-async function fixBlogImages() {
-  const admin = createAdminClient();
+async function fixBlogImages(sql: ReturnType<typeof createPostgresClient>) {
   const seedBySlug = new Map(staticBlogPosts.map((post) => [post.slug, post]));
-  const { data: posts, error } = await admin
-    .from("blog_posts")
-    .select("id, slug, image, body_html");
-
-  if (error) throw new Error(error.message);
+  const posts = await sql<
+    { id: string; slug: string; image: string; body_html: string | null }[]
+  >`select id, slug, image, body_html from public.blog_posts`;
 
   let updated = 0;
 
-  for (const post of posts ?? []) {
+  for (const post of posts) {
     const seed = seedBySlug.get(post.slug);
     const nextImage = await resolveReachableImage(post.image, seed?.image);
     const nextBody = post.body_html
@@ -71,15 +69,14 @@ async function fixBlogImages() {
 
     if (post.image === nextImage && post.body_html === nextBody) continue;
 
-    const { error: updateError } = await admin
-      .from("blog_posts")
-      .update({
-        image: nextImage,
-        ...(nextBody !== post.body_html ? { body_html: nextBody } : {}),
-      })
-      .eq("id", post.id);
-
-    if (updateError) throw new Error(`${post.slug}: ${updateError.message}`);
+    await sql`
+      update public.blog_posts
+      set
+        image = ${nextImage},
+        body_html = ${nextBody ?? post.body_html},
+        updated_at = now()
+      where id = ${post.id}::uuid
+    `;
 
     updated += 1;
     console.log(`Updated ${post.slug}`);
@@ -88,30 +85,28 @@ async function fixBlogImages() {
   console.log(`Done. Updated ${updated} blog posts.`);
 }
 
-async function fixTourImages() {
-  const admin = createAdminClient();
-  const { data: tours, error } = await admin.from("tours").select("id, slug, image, gallery");
-
-  if (error) throw new Error(error.message);
+async function fixTourImages(sql: ReturnType<typeof createPostgresClient>) {
+  const tours = await sql<
+    { id: string; slug: string; image: string; gallery: string[] | null }[]
+  >`select id, slug, image, gallery from public.tours`;
 
   let updated = 0;
 
-  for (const tour of tours ?? []) {
+  for (const tour of tours) {
     const nextImage = normalizeMediaUrl(tour.image);
     const gallery = Array.isArray(tour.gallery)
-      ? tour.gallery.map((url: string) => normalizeMediaUrl(url))
+      ? tour.gallery.map((url) => normalizeMediaUrl(url))
       : [];
 
     if (tour.image === nextImage && JSON.stringify(tour.gallery) === JSON.stringify(gallery)) {
       continue;
     }
 
-    const { error: updateError } = await admin
-      .from("tours")
-      .update({ image: nextImage, gallery })
-      .eq("id", tour.id);
-
-    if (updateError) throw new Error(`${tour.slug}: ${updateError.message}`);
+    await sql`
+      update public.tours
+      set image = ${nextImage}, gallery = ${sql.json(gallery)}, updated_at = now()
+      where id = ${tour.id}::uuid
+    `;
 
     updated += 1;
     console.log(`Updated tour ${tour.slug}`);
@@ -121,8 +116,18 @@ async function fixTourImages() {
 }
 
 async function main() {
-  await fixBlogImages();
-  await fixTourImages();
+  const databaseUrl = getDatabaseUrl();
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required in .env.local");
+  }
+
+  const sql = createPostgresClient(databaseUrl);
+  try {
+    await fixBlogImages(sql);
+    await fixTourImages(sql);
+  } finally {
+    await sql.end();
+  }
 }
 
 main().catch((error) => {

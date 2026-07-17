@@ -3,7 +3,7 @@ import { HiArrowTopRightOnSquare } from "react-icons/hi2";
 import { logoutAction } from "@/app/admin/actions/auth";
 import { AdminHeaderSmsBalance } from "@/components/admin/AdminHeaderSmsBalance";
 import type { SplitSmsBalance } from "@/lib/splitsms";
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { StaffRole } from "@/lib/auth/staff";
 
 type Props = {
   email: string;

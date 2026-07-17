@@ -2,20 +2,19 @@ import { Logo } from "@/components/Logo";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ResetPasswordForm } from "@/components/admin/ResetPasswordForm";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
+import { isDatabaseConfigured } from "@/lib/db/config";
 
-export default async function AdminResetPasswordPage() {
-  if (!isSupabaseConfigured()) {
+type Props = {
+  searchParams: Promise<{ token?: string }>;
+};
+
+export default async function AdminResetPasswordPage({ searchParams }: Props) {
+  if (!isDatabaseConfigured()) {
     redirect("/admin/setup");
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const { token } = await searchParams;
+  if (!token?.trim()) {
     redirect("/admin/login?error=reset-link");
   }
 
@@ -31,7 +30,7 @@ export default async function AdminResetPasswordPage() {
           />
         </div>
 
-        <ResetPasswordForm />
+        <ResetPasswordForm token={token} />
 
         <p className="admin-login-nav">
           <Link href="/">&larr; Back to Travel Zone</Link>

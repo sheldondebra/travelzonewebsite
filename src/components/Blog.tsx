@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getPublishedBlogPosts } from "@/lib/content";
+import { getPublishedBlogPosts } from "@/lib/content-public";
+import { getNextImageSrc } from "@/lib/media-url";
 
 export async function Blog() {
   const blogPosts = await getPublishedBlogPosts();
@@ -43,7 +44,7 @@ export async function Blog() {
         >
           <div className="relative isolate min-h-[260px] overflow-hidden lg:min-h-[380px]">
             <Image
-              src={featured.image}
+              src={getNextImageSrc(featured.image)}
               alt={featured.title}
               fill
               className="z-0 object-cover transition-transform duration-700 group-hover:scale-[1.03]"
@@ -90,7 +91,7 @@ export async function Blog() {
             >
               <div className="relative aspect-[16/10] overflow-hidden">
                 <Image
-                  src={post.image}
+                  src={getNextImageSrc(post.image)}
                   alt={post.title}
                   fill
                   className="object-cover transition-transform duration-500 group-hover:scale-105"

@@ -1,20 +1,17 @@
-import { createClient as createSupabaseJs } from "@supabase/supabase-js";
+import "server-only";
+
 import { cache } from "react";
 import type { BlogPost } from "@/lib/content";
 import type { Tour } from "@/lib/tours";
+import { isDatabaseConfigured } from "@/lib/db/config";
+import { getSql } from "@/lib/db/postgres";
+import { withQueryTimeout } from "@/lib/db/query-with-timeout";
 import { normalizeMediaUrl, normalizeMediaUrls } from "@/lib/media-url";
 import { sanitizeBlogHtml } from "@/lib/sanitize-html";
-import { getSupabaseEnv, isSupabaseConfigured } from "@/lib/supabase/config";
 import { staticBlogPosts, staticTours } from "@/lib/seed-data";
 
 function withNormalizedBlogImage<T extends { image: string }>(post: T): T {
   return { ...post, image: normalizeMediaUrl(post.image) };
-}
-
-function anonClient() {
-  const env = getSupabaseEnv();
-  if (!env) throw new Error("Supabase not configured");
-  return createSupabaseJs(env.url, env.anonKey);
 }
 
 function asStringArray(value: unknown): string[] {
@@ -43,18 +40,36 @@ function rowToTour(row: Record<string, unknown>): Tour {
   };
 }
 
-function rowToBlogPostListItem(row: Record<string, unknown>): BlogPost {
-  return {
-    slug: row.slug as string,
-    title: row.title as string,
-    excerpt: (row.excerpt as string) ?? "",
-    content: [],
-    image: normalizeMediaUrl((row.image as string) ?? ""),
-    date: (row.display_date as string) ?? "",
-    category: (row.category as string) ?? "",
-    readTime: (row.read_time as string) ?? "5 min read",
-    updatedAt: (row.updated_at as string) ?? undefined,
-  };
+function staticBlogPostList(): BlogPost[] {
+  return staticBlogPosts.map((post) =>
+    withNormalizedBlogImage({
+      ...post,
+      content: [],
+      bodyHtml: undefined,
+    }),
+  );
+}
+
+function rowToBlogPostListItem(row: Record<string, unknown>): BlogPost | null {
+  try {
+    const slug = String(row.slug ?? "").trim();
+    const title = String(row.title ?? "").trim();
+    if (!slug || !title) return null;
+
+    return {
+      slug,
+      title,
+      excerpt: String(row.excerpt ?? ""),
+      content: [],
+      image: normalizeMediaUrl(String(row.image ?? "")),
+      date: String(row.display_date ?? ""),
+      category: String(row.category ?? ""),
+      readTime: String(row.read_time ?? "5 min read"),
+      updatedAt: typeof row.updated_at === "string" ? row.updated_at : undefined,
+    };
+  } catch {
+    return null;
+  }
 }
 
 function rowToBlogPost(row: Record<string, unknown>): BlogPost {
@@ -82,32 +97,6 @@ export function htmlToParagraphs(html: string): string[] {
   );
 }
 
-const TOUR_LIST_COLUMNS =
-  "slug, title, tagline, location, duration, price, currency, price_note, travel_period, image, category";
-
-const BLOG_LIST_COLUMNS =
-  "slug, title, excerpt, image, display_date, category, read_time, updated_at, published_at";
-
-async function loadPublishedTours(): Promise<Tour[]> {
-  if (!isSupabaseConfigured()) return staticTours.map(normalizeTourMedia);
-
-  const { data, error } = await anonClient()
-    .from("tours")
-    .select(TOUR_LIST_COLUMNS)
-    .eq("status", "published")
-    .order("updated_at", { ascending: false });
-
-  if (error || !data?.length) return staticTours.map(normalizeTourMedia);
-  return data.map((row) => ({
-    ...rowToTour(row),
-    gallery: [],
-    description: "",
-    overview: [],
-    highlights: [],
-    included: [],
-  }));
-}
-
 function normalizeTourMedia(tour: Tour): Tour {
   return {
     ...tour,
@@ -116,94 +105,124 @@ function normalizeTourMedia(tour: Tour): Tour {
   };
 }
 
+async function loadPublishedTours(): Promise<Tour[]> {
+  if (!isDatabaseConfigured()) return staticTours.map(normalizeTourMedia);
+
+  try {
+    const sql = getSql();
+    const rows = await sql`
+      select slug, title, tagline, location, duration, price, currency,
+             price_note, travel_period, image, category
+      from public.tours
+      where status = 'published'
+      order by updated_at desc
+    `;
+
+    if (!rows.length) return staticTours.map(normalizeTourMedia);
+
+    return rows.map((row) => ({
+      ...rowToTour(row),
+      gallery: [],
+      description: "",
+      overview: [],
+      highlights: [],
+      included: [],
+    }));
+  } catch {
+    return staticTours.map(normalizeTourMedia);
+  }
+}
+
 async function loadTourBySlug(slug: string): Promise<Tour | null> {
-  if (!isSupabaseConfigured()) {
+  if (!isDatabaseConfigured()) {
     const tour = staticTours.find((t) => t.slug === slug);
     return tour ? normalizeTourMedia(tour) : null;
   }
 
-  const { data, error } = await anonClient()
-    .from("tours")
-    .select("*")
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
+  try {
+    const sql = getSql();
+    const rows = await sql`
+      select * from public.tours
+      where slug = ${slug} and status = 'published'
+      limit 1
+    `;
 
-  if (error || !data) {
+    if (!rows[0]) {
+      const tour = staticTours.find((t) => t.slug === slug);
+      return tour ? normalizeTourMedia(tour) : null;
+    }
+
+    return rowToTour(rows[0]);
+  } catch {
     const tour = staticTours.find((t) => t.slug === slug);
     return tour ? normalizeTourMedia(tour) : null;
   }
-  return rowToTour(data);
 }
 
 async function loadPublishedBlogPosts(): Promise<BlogPost[]> {
+  const fallback = staticBlogPostList();
+  if (!isDatabaseConfigured()) return fallback;
+
   try {
-    if (!isSupabaseConfigured()) {
-      return staticBlogPosts.map((post) =>
-        withNormalizedBlogImage({
-          ...post,
-          content: [],
-          bodyHtml: undefined,
-        }),
-      );
-    }
-
-    const { data, error } = await anonClient()
-      .from("blog_posts")
-      .select(BLOG_LIST_COLUMNS)
-      .eq("status", "published")
-      .order("published_at", { ascending: false });
-
-    if (error || !data?.length) {
-      return staticBlogPosts.map((post) =>
-        withNormalizedBlogImage({
-          ...post,
-          content: [],
-          bodyHtml: undefined,
-        }),
-      );
-    }
-    return data.map((row) => rowToBlogPostListItem(row));
-  } catch {
-    return staticBlogPosts.map((post) =>
-      withNormalizedBlogImage({
-        ...post,
-        content: [],
-        bodyHtml: undefined,
-      }),
+    const rows = await withQueryTimeout(
+      (async () => {
+        const sql = getSql();
+        return sql`
+          select slug, title, excerpt, image, display_date, category,
+                 read_time, updated_at, published_at
+          from public.blog_posts
+          where status = 'published'
+          order by published_at desc nulls last
+        `;
+      })(),
+      [] as Record<string, unknown>[],
     );
+
+    if (!rows.length) return fallback;
+
+    const posts = rows
+      .map((row) => rowToBlogPostListItem(row))
+      .filter((post): post is BlogPost => post !== null);
+
+    return posts.length > 0 ? posts : fallback;
+  } catch {
+    return fallback;
   }
 }
 
 async function loadBlogPostBySlug(slug: string): Promise<BlogPost | null> {
+  const fallback = staticBlogPosts.find((p) => p.slug === slug);
+  const fallbackPost = fallback ? withNormalizedBlogImage(fallback) : null;
+
+  if (!isDatabaseConfigured()) return fallbackPost;
+
   try {
-    if (!isSupabaseConfigured()) {
-      const post = staticBlogPosts.find((p) => p.slug === slug);
-      return post ? withNormalizedBlogImage(post) : null;
-    }
+    const row = await withQueryTimeout(
+      (async () => {
+        const sql = getSql();
+        const rows = await sql`
+          select * from public.blog_posts
+          where slug = ${slug} and status = 'published'
+          limit 1
+        `;
+        return rows[0] ?? null;
+      })(),
+      null as Record<string, unknown> | null,
+    );
 
-    const { data, error } = await anonClient()
-      .from("blog_posts")
-      .select("*")
-      .eq("slug", slug)
-      .eq("status", "published")
-      .maybeSingle();
+    if (!row) return fallbackPost;
 
-    if (error || !data) {
-      const post = staticBlogPosts.find((p) => p.slug === slug);
-      return post ? withNormalizedBlogImage(post) : null;
+    try {
+      return rowToBlogPost(row);
+    } catch {
+      return fallbackPost;
     }
-    return rowToBlogPost(data);
   } catch {
-    const post = staticBlogPosts.find((p) => p.slug === slug);
-    return post ? withNormalizedBlogImage(post) : null;
+    return fallbackPost;
   }
 }
 
 export const getPublishedTours = cache(loadPublishedTours);
-
 export const getTourBySlug = cache(loadTourBySlug);
-
 export const getPublishedBlogPosts = cache(loadPublishedBlogPosts);
-
 export const getBlogPostBySlug = cache(loadBlogPostBySlug);

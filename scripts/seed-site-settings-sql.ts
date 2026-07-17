@@ -1,7 +1,7 @@
-import postgres from "postgres";
 import { DEFAULT_SITE_SETTINGS } from "@/lib/site-settings";
 import { getDatabaseUrl } from "./db-url";
 import { loadLocalEnv } from "./load-env";
+import { createPostgresClient } from "./postgres-client";
 
 loadLocalEnv();
 
@@ -11,7 +11,7 @@ async function seedSiteSettings() {
     throw new Error("DATABASE_URL or SUPABASE_DB_PASSWORD is required.");
   }
 
-  const sql = postgres(databaseUrl, { max: 1 });
+  const sql = createPostgresClient(databaseUrl);
 
   try {
     const [admin] = await sql<{ id: string }[]>`

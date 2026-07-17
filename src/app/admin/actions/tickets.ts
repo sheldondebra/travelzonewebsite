@@ -9,7 +9,7 @@ import {
 } from "@/lib/ticket-requests-store";
 import { getEmailDeliveryConfig, getSplitSmsConfig } from "@/lib/site-settings";
 import { sendSms } from "@/lib/splitsms";
-import { requireAdmin, requireStaff } from "@/lib/supabase/auth";
+import { requireAdmin, requireStaff } from "@/lib/auth/staff";
 
 export type TicketRequestActionResult =
   | { success: true; message: string }

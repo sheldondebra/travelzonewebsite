@@ -1,9 +1,10 @@
 import { randomUUID } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import { createClient } from "@supabase/supabase-js";
+import { isDatabaseConfigured } from "@/lib/db/config";
+import { isMissingTableError } from "@/lib/db/errors";
+import { getSql } from "@/lib/db/postgres";
 import type { TicketRequest, TicketRequestStatus } from "@/lib/ticket-requests";
-import { isMissingTableError, isTicketRequestWriteFallbackError } from "@/lib/supabase/db-errors";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "ticket-requests.json");
@@ -20,33 +21,6 @@ async function readAll(): Promise<TicketRequest[]> {
 async function writeAll(requests: TicketRequest[]) {
   await mkdir(DATA_DIR, { recursive: true });
   await writeFile(DATA_FILE, JSON.stringify(requests, null, 2));
-}
-
-function supabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
-function toRow(request: TicketRequest) {
-  return {
-    id: request.id,
-    full_name: request.fullName,
-    email: request.email,
-    phone: request.phone,
-    trip_type: request.tripType,
-    origin: request.origin,
-    destination: request.destination,
-    departure_date: request.departureDate,
-    return_date: request.returnDate ?? null,
-    passengers: request.passengers,
-    cabin_class: request.cabinClass,
-    flexible_dates: request.flexibleDates,
-    notes: request.notes ?? null,
-    status: request.status,
-    created_at: request.createdAt,
-  };
 }
 
 function fromRow(row: Record<string, unknown>): TicketRequest {
@@ -78,35 +52,54 @@ async function persistTicketRequestLocally(request: TicketRequest) {
 }
 
 export async function saveTicketRequest(request: TicketRequest) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { error } = await supabase.from("ticket_booking_requests").insert(toRow(request));
-    if (!error) return;
-
-    if (isTicketRequestWriteFallbackError(error)) {
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      await sql`
+        insert into public.ticket_booking_requests (
+          id, full_name, email, phone, trip_type, origin, destination,
+          departure_date, return_date, passengers, cabin_class,
+          flexible_dates, notes, status, created_at
+        ) values (
+          ${request.id},
+          ${request.fullName},
+          ${request.email},
+          ${request.phone},
+          ${request.tripType},
+          ${request.origin},
+          ${request.destination},
+          ${request.departureDate},
+          ${request.returnDate ?? null},
+          ${request.passengers},
+          ${request.cabinClass},
+          ${request.flexibleDates},
+          ${request.notes ?? null},
+          ${request.status},
+          ${request.createdAt}
+        )
+      `;
+      return;
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
       await persistTicketRequestLocally(request);
       return;
     }
-
-    throw new Error(error.message);
   }
 
   await persistTicketRequestLocally(request);
 }
 
 export async function getTicketRequestById(id: string) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("ticket_booking_requests")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-    if (error) {
-      if (isMissingTableError(error)) return null;
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        select * from public.ticket_booking_requests where id = ${id} limit 1
+      `;
+      return rows[0] ? fromRow(rows[0]) : null;
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return data ? fromRow(data) : null;
   }
 
   const requests = await readAll();
@@ -114,17 +107,17 @@ export async function getTicketRequestById(id: string) {
 }
 
 export async function listTicketRequests() {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("ticket_booking_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) {
-      if (isMissingTableError(error)) return [];
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        select * from public.ticket_booking_requests
+        order by created_at desc
+      `;
+      return rows.map((row) => fromRow(row));
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return (data ?? []).map((row) => fromRow(row));
   }
 
   const requests = await readAll();
@@ -134,23 +127,23 @@ export async function listTicketRequests() {
 }
 
 export async function updateTicketRequestStatus(id: string, status: TicketRequestStatus) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("ticket_booking_requests")
-      .update({ status })
-      .eq("id", id)
-      .select("*")
-      .single();
-    if (error) {
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        update public.ticket_booking_requests
+        set status = ${status}
+        where id = ${id}
+        returning *
+      `;
+      if (!rows[0]) throw new Error("Ticket request not found");
+      return fromRow(rows[0]);
+    } catch (error) {
       if (isMissingTableError(error)) {
-        throw new Error(
-          "Ticket requests table is not set up. Run npm run db:setup.",
-        );
+        throw new Error("Ticket requests table is not set up. Run npm run db:setup.");
       }
-      throw new Error(error.message);
+      throw error;
     }
-    return fromRow(data);
   }
 
   const requests = await readAll();

@@ -1,4 +1,4 @@
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { StaffRole } from "@/lib/auth/staff";
 
 export const STAFF_ROLES: Record<
   StaffRole,

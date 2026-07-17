@@ -5,7 +5,7 @@ import { UsersList } from "@/components/admin/UsersList";
 type StaffUser = {
   id: string;
   email: string;
-  role: import("@/lib/supabase/auth").StaffRole;
+  role: import("@/lib/auth/staff").StaffRole;
   createdAt: string;
 };
 

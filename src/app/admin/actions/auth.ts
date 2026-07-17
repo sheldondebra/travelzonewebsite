@@ -1,10 +1,18 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import {
+  authenticateStaff,
+  consumePasswordResetToken,
+  createPasswordResetToken,
+  createStaffSession,
+  getStaffUser,
+  updateStaffUserPassword,
+} from "@/lib/auth/staff";
+import { clearSessionCookieOnServer } from "@/lib/auth/session";
+import { isDatabaseConfigured } from "@/lib/db/config";
+import { sendEmail } from "@/lib/email";
 import { rateLimitFromHeaders } from "@/lib/rate-limit";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
-import { getStaffUser } from "@/lib/supabase/auth";
 
 function getAppUrl() {
   return (
@@ -20,7 +28,7 @@ export async function loginAction(
   _prev: LoginActionState | undefined,
   formData: FormData,
 ): Promise<LoginActionState> {
-  if (!isSupabaseConfigured()) {
+  if (!isDatabaseConfigured()) {
     return { error: "Admin is not configured yet." };
   }
 
@@ -32,19 +40,12 @@ export async function loginAction(
     return { error: "Too many login attempts. Please wait a few minutes and try again." };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  const staff = await getStaffUser();
+  const staff = await authenticateStaff(email, password);
   if (!staff) {
-    await supabase.auth.signOut();
-    return { error: "This account does not have dashboard access." };
+    return { error: "Invalid email or password." };
   }
 
+  await createStaffSession(staff);
   return { success: true };
 }
 
@@ -54,7 +55,7 @@ export async function requestPasswordResetAction(
   _prev: PasswordResetActionState | undefined,
   formData: FormData,
 ): Promise<PasswordResetActionState> {
-  if (!isSupabaseConfigured()) {
+  if (!isDatabaseConfigured()) {
     return { error: "Admin is not configured yet." };
   }
 
@@ -68,13 +69,21 @@ export async function requestPasswordResetAction(
     return { error: "Too many reset requests. Please try again later." };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${getAppUrl()}/admin/auth/callback?next=/admin/reset-password`,
-  });
-
-  if (error) {
-    return { error: error.message };
+  const reset = await createPasswordResetToken(email);
+  if (reset) {
+    const resetUrl = `${getAppUrl()}/admin/reset-password?token=${reset.token}`;
+    try {
+      await sendEmail({
+        to: reset.email,
+        subject: "Reset your Travel Zone admin password",
+        text: `Use this link to reset your password (valid for 1 hour):\n\n${resetUrl}`,
+        html: `<p>Use this link to reset your password (valid for 1 hour):</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
+      });
+    } catch {
+      if (process.env.NODE_ENV !== "production") {
+        console.info(`Password reset link for ${reset.email}: ${resetUrl}`);
+      }
+    }
   }
 
   return {
@@ -89,12 +98,13 @@ export async function updatePasswordAction(
   _prev: UpdatePasswordActionState | undefined,
   formData: FormData,
 ): Promise<UpdatePasswordActionState> {
-  if (!isSupabaseConfigured()) {
+  if (!isDatabaseConfigured()) {
     return { error: "Admin is not configured yet." };
   }
 
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
+  const token = String(formData.get("token") ?? "").trim();
 
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
@@ -104,39 +114,33 @@ export async function updatePasswordAction(
     return { error: "Passwords do not match." };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!token) {
     return {
       error: "Your reset link has expired. Request a new one from the login page.",
     };
   }
 
-  const staff = await getStaffUser();
-  if (!staff) {
-    await supabase.auth.signOut();
-    return { error: "This account does not have dashboard access." };
+  const reset = await consumePasswordResetToken(token);
+  if (!reset) {
+    return {
+      error: "Your reset link has expired. Request a new one from the login page.",
+    };
   }
 
-  const { error } = await supabase.auth.updateUser({ password });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  await supabase.auth.signOut();
+  await updateStaffUserPassword(reset.userId, password);
+  await clearSessionCookieOnServer();
   return { success: true };
 }
 
 export async function logoutAction() {
-  if (!isSupabaseConfigured()) {
+  if (!isDatabaseConfigured()) {
     redirect("/admin/setup");
   }
 
-  const supabase = await createClient();
-  await supabase.auth.signOut();
+  await clearSessionCookieOnServer();
   redirect("/admin/login");
+}
+
+export async function getAuthenticatedStaffForPage() {
+  return getStaffUser();
 }

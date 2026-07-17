@@ -1,4 +1,3 @@
-import { createClient as createSupabaseJs } from "@supabase/supabase-js";
 import { cache } from "react";
 import type {
   AboutTeamMember,
@@ -7,28 +6,16 @@ import type {
 } from "@/lib/about-team";
 import { teamMembers as fallbackTeamMembers } from "@/lib/content";
 import type { ContentStatus } from "@/lib/content-types";
+import { isDatabaseConfigured } from "@/lib/db/config";
+import { databaseSetupError, isMissingTableError } from "@/lib/db/errors";
+import { getSql } from "@/lib/db/postgres";
 import { normalizeMediaUrl } from "@/lib/media-url";
-import { getSupabaseEnv, isSupabaseConfigured } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
-import { isMissingTableError } from "@/lib/supabase/db-errors";
 
 const DEFAULT_ABOUT_TEAM_MEMBER_IDS = [
   "a1111111-1111-4111-8111-111111111101",
   "a1111111-1111-4111-8111-111111111102",
   "a1111111-1111-4111-8111-111111111103",
 ] as const;
-
-function databaseSetupError() {
-  return new Error(
-    "About team table is missing. Run supabase/migrations/20260628140000_about_team_members.sql in the Supabase SQL Editor.",
-  );
-}
-
-function anonClient() {
-  const env = getSupabaseEnv();
-  if (!env) throw new Error("Supabase not configured");
-  return createSupabaseJs(env.url, env.anonKey);
-}
 
 function rowToMember(row: Record<string, unknown>): AdminAboutTeamMember {
   return {
@@ -62,87 +49,89 @@ function fallbackMembers(): AboutTeamMember[] {
 }
 
 export const getPublishedAboutTeamMembers = cache(async (): Promise<AboutTeamMember[]> => {
-  if (!isSupabaseConfigured()) return fallbackMembers();
+  if (!isDatabaseConfigured()) return fallbackMembers();
 
   try {
-    const { data, error } = await anonClient()
-      .from("about_team_members")
-      .select("*")
-      .eq("status", "published")
-      .order("sort_order", { ascending: true })
-      .order("updated_at", { ascending: false });
+    const sql = getSql();
+    const rows = await sql`
+      select * from public.about_team_members
+      where status = 'published'
+      order by sort_order asc, updated_at desc
+    `;
 
-    if (error || !data?.length) return fallbackMembers();
-
-    return data.map((row) => toPublicMember(rowToMember(row)));
+    if (!rows.length) return fallbackMembers();
+    return rows.map((row) => toPublicMember(rowToMember(row)));
   } catch {
     return fallbackMembers();
   }
 });
 
 export async function listAdminAboutTeamMembers(): Promise<AdminAboutTeamMember[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("about_team_members")
-    .select("*")
-    .order("sort_order", { ascending: true })
-    .order("updated_at", { ascending: false });
-
-  if (error) {
+  const sql = getSql();
+  try {
+    const rows = await sql`
+      select * from public.about_team_members
+      order by sort_order asc, updated_at desc
+    `;
+    return rows.map((row) => rowToMember(row));
+  } catch (error) {
     if (isMissingTableError(error)) return [];
-    throw new Error(error.message);
+    throw error;
   }
-
-  return (data ?? []).map((row) => rowToMember(row));
 }
 
-/** Import the default About page team into the database when empty. */
 export async function seedDefaultAboutTeamMembersIfEmpty(): Promise<number> {
-  const supabase = await createClient();
-  const { count, error: countError } = await supabase
-    .from("about_team_members")
-    .select("*", { count: "exact", head: true });
+  const sql = getSql();
 
-  if (countError) {
-    if (isMissingTableError(countError)) throw databaseSetupError();
-    throw new Error(countError.message);
-  }
+  try {
+    const countRows = await sql<{ count: string }[]>`
+      select count(*)::text as count from public.about_team_members
+    `;
+    const count = Number(countRows[0]?.count ?? 0);
+    if (count > 0) return 0;
 
-  if ((count ?? 0) > 0) return 0;
+    for (const [index, member] of fallbackTeamMembers.entries()) {
+      await sql`
+        insert into public.about_team_members (
+          id, name, role, bio, image, sort_order, status
+        ) values (
+          ${DEFAULT_ABOUT_TEAM_MEMBER_IDS[index] ?? null}::uuid,
+          ${member.name},
+          ${member.role},
+          ${member.bio},
+          ${member.image},
+          ${index + 1},
+          'published'
+        )
+        on conflict (id) do update set
+          name = excluded.name,
+          role = excluded.role,
+          bio = excluded.bio,
+          image = excluded.image,
+          sort_order = excluded.sort_order,
+          status = excluded.status,
+          updated_at = now()
+      `;
+    }
 
-  const rows = fallbackTeamMembers.map((member, index) => ({
-    id: DEFAULT_ABOUT_TEAM_MEMBER_IDS[index] ?? undefined,
-    name: member.name,
-    role: member.role,
-    bio: member.bio,
-    image: member.image,
-    sort_order: index + 1,
-    status: "published" as const,
-  }));
-
-  const { error } = await supabase.from("about_team_members").upsert(rows, { onConflict: "id" });
-  if (error) {
+    return fallbackTeamMembers.length;
+  } catch (error) {
     if (isMissingTableError(error)) throw databaseSetupError();
-    throw new Error(error.message);
+    throw error;
   }
-
-  return rows.length;
 }
 
 export async function getAdminAboutTeamMember(id: string): Promise<AdminAboutTeamMember | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("about_team_members")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error) {
+  const sql = getSql();
+  try {
+    const rows = await sql`
+      select * from public.about_team_members where id = ${id}::uuid limit 1
+    `;
+    return rows[0] ? rowToMember(rows[0]) : null;
+  } catch (error) {
     if (isMissingTableError(error)) return null;
-    throw new Error(error.message);
+    throw error;
   }
-
-  return data ? rowToMember(data) : null;
 }
 
 function memberToRow(input: AboutTeamMemberInput) {
@@ -160,52 +149,66 @@ export async function saveAboutTeamMember(
   input: AboutTeamMemberInput,
   options: { id?: string },
 ): Promise<string> {
-  const supabase = await createClient();
+  const sql = getSql();
   const row = memberToRow(input);
 
-  if (options.id) {
-    const { error } = await supabase
-      .from("about_team_members")
-      .update(row)
-      .eq("id", options.id);
-    if (error) {
-      if (isMissingTableError(error)) throw databaseSetupError();
-      throw new Error(error.message);
+  try {
+    if (options.id) {
+      await sql`
+        update public.about_team_members
+        set
+          name = ${row.name},
+          role = ${row.role},
+          bio = ${row.bio},
+          image = ${row.image},
+          sort_order = ${row.sort_order},
+          status = ${row.status},
+          updated_at = now()
+        where id = ${options.id}::uuid
+      `;
+      return options.id;
     }
-    return options.id;
-  }
 
-  const { data, error } = await supabase
-    .from("about_team_members")
-    .insert(row)
-    .select("id")
-    .single();
-
-  if (error) {
+    const rows = await sql<{ id: string }[]>`
+      insert into public.about_team_members (
+        name, role, bio, image, sort_order, status
+      ) values (
+        ${row.name},
+        ${row.role},
+        ${row.bio},
+        ${row.image},
+        ${row.sort_order},
+        ${row.status}
+      )
+      returning id
+    `;
+    return rows[0].id;
+  } catch (error) {
     if (isMissingTableError(error)) throw databaseSetupError();
-    throw new Error(error.message);
+    throw error;
   }
-
-  return data.id as string;
 }
 
 export async function deleteAboutTeamMember(id: string) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("about_team_members").delete().eq("id", id);
-  if (error) {
+  const sql = getSql();
+  try {
+    await sql`delete from public.about_team_members where id = ${id}::uuid`;
+  } catch (error) {
     if (isMissingTableError(error)) throw databaseSetupError();
-    throw new Error(error.message);
+    throw error;
   }
 }
 
 export async function updateAboutTeamMemberStatus(id: string, status: ContentStatus) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("about_team_members")
-    .update({ status })
-    .eq("id", id);
-  if (error) {
+  const sql = getSql();
+  try {
+    await sql`
+      update public.about_team_members
+      set status = ${status}, updated_at = now()
+      where id = ${id}::uuid
+    `;
+  } catch (error) {
     if (isMissingTableError(error)) throw databaseSetupError();
-    throw new Error(error.message);
+    throw error;
   }
 }

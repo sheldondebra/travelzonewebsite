@@ -19,9 +19,9 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.paystack.co",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://images.unsplash.com https://*.supabase.co",
+      "img-src 'self' data: blob: https://images.unsplash.com",
       "font-src 'self' data:",
-      "connect-src 'self' https://api.paystack.co https://*.supabase.co wss://*.supabase.co",
+      "connect-src 'self' https://api.paystack.co",
       "frame-src https://js.paystack.co https://www.google.com https://maps.google.com",
       "base-uri 'self'",
       "form-action 'self'",
@@ -48,10 +48,6 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "images.unsplash.com",
-      },
-      {
-        protocol: "https",
-        hostname: "*.supabase.co",
       },
     ],
   },

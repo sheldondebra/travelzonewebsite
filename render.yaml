@@ -12,11 +12,9 @@ services:
         sync: false
       - key: APP_URL
         sync: false
-      - key: NEXT_PUBLIC_SUPABASE_URL
+      - key: DATABASE_URL
         sync: false
-      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
+      - key: SESSION_SECRET
         sync: false
       - key: PAYSTACK_SECRET_KEY
         sync: false

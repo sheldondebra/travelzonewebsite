@@ -1,7 +1,7 @@
-import { createAdminClient } from "@/lib/supabase/admin";
-import { upsertStaffUserRecord } from "@/lib/staff-users";
-import type { StaffRole } from "@/lib/supabase/auth";
+import { getDatabaseUrl } from "./db-url";
 import { loadLocalEnv } from "./load-env";
+import { createPostgresClient } from "./postgres-client";
+import { hashPassword } from "@/lib/auth/password";
 
 loadLocalEnv();
 
@@ -14,47 +14,30 @@ async function createAdmin() {
     process.exit(1);
   }
 
-  const admin = createAdminClient();
-
-  const { data: existing } = await admin.auth.admin.listUsers();
-  const found = existing.users.find(
-    (user) => user.email?.toLowerCase() === email.toLowerCase(),
-  );
-
-  if (found) {
-    const { data, error } = await admin.auth.admin.updateUserById(found.id, {
-      password,
-      email_confirm: true,
-      app_metadata: { role: "admin" },
-    });
-    if (error) throw new Error(error.message);
-
-    await upsertStaffUserRecord({
-      id: data.user.id,
-      email: data.user.email ?? email,
-      role: "admin",
-    });
-
-    console.log(`Updated existing admin: ${data.user.email}`);
-    return;
+  const databaseUrl = getDatabaseUrl();
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required in .env.local");
   }
 
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    app_metadata: { role: "admin" as StaffRole },
-  });
+  const sql = createPostgresClient(databaseUrl);
+  const passwordHash = await hashPassword(password);
 
-  if (error) throw new Error(error.message);
+  try {
+    const rows = await sql<{ id: string; email: string }[]>`
+      insert into public.users (email, password_hash, role, is_active)
+      values (lower(${email}), ${passwordHash}, 'admin', true)
+      on conflict ((lower(email))) do update set
+        password_hash = excluded.password_hash,
+        role = 'admin',
+        is_active = true,
+        updated_at = now()
+      returning id, email
+    `;
 
-  await upsertStaffUserRecord({
-    id: data.user.id,
-    email: data.user.email ?? email,
-    role: "admin",
-  });
-
-  console.log(`Created admin: ${data.user.email}`);
+    console.log(`Admin ready: ${rows[0]?.email ?? email}`);
+  } finally {
+    await sql.end();
+  }
 }
 
 createAdmin().catch((error) => {

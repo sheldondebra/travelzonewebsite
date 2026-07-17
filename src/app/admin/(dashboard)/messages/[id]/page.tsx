@@ -8,7 +8,7 @@ import { formatContactMessageDateTime } from "@/lib/contact-admin";
 import { getContactSubjectLabel } from "@/lib/contact-messages";
 import { getContactMessageById } from "@/lib/contact-messages-store";
 import { isEmailConfigured, getSplitSmsConfig } from "@/lib/site-settings";
-import { getStaffUser } from "@/lib/supabase/auth";
+import { getStaffUser } from "@/lib/auth/staff";
 
 type Props = {
   params: Promise<{ id: string }>;

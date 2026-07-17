@@ -1,9 +1,10 @@
 import { randomUUID } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import { createClient } from "@supabase/supabase-js";
 import type { TourBooking } from "@/lib/bookings";
-import { isMissingTableError } from "@/lib/supabase/db-errors";
+import { isDatabaseConfigured } from "@/lib/db/config";
+import { isMissingTableError } from "@/lib/db/errors";
+import { getSql } from "@/lib/db/postgres";
 
 const BOOKINGS_DIR = path.join(process.cwd(), "data");
 const BOOKINGS_FILE = path.join(BOOKINGS_DIR, "bookings.json");
@@ -20,35 +21,6 @@ async function readAll(): Promise<TourBooking[]> {
 async function writeAll(bookings: TourBooking[]) {
   await mkdir(BOOKINGS_DIR, { recursive: true });
   await writeFile(BOOKINGS_FILE, JSON.stringify(bookings, null, 2));
-}
-
-function supabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
-function toRow(booking: TourBooking) {
-  return {
-    id: booking.id,
-    tour_slug: booking.tourSlug,
-    tour_title: booking.tourTitle,
-    full_name: booking.fullName,
-    email: booking.email,
-    phone: booking.phone,
-    travel_date: booking.travelDate,
-    travelers: booking.travelers,
-    special_requests: booking.specialRequests ?? null,
-    estimated_total: booking.estimatedTotal,
-    currency: booking.currency,
-    status: booking.status,
-    payment_status: booking.paymentStatus,
-    paystack_reference: booking.paystackReference ?? null,
-    paid_amount: booking.paidAmount ?? null,
-    paid_at: booking.paidAt ?? null,
-    created_at: booking.createdAt,
-  };
 }
 
 function fromRow(row: Record<string, unknown>): TourBooking {
@@ -74,21 +46,54 @@ function fromRow(row: Record<string, unknown>): TourBooking {
 }
 
 export async function saveBooking(booking: TourBooking) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { error } = await supabase.from("tour_bookings").upsert(toRow(booking));
-    if (error) {
-      if (isMissingTableError(error)) {
-        const bookings = await readAll();
-        const index = bookings.findIndex((b) => b.id === booking.id);
-        if (index >= 0) bookings[index] = booking;
-        else bookings.push(booking);
-        await writeAll(bookings);
-        return;
-      }
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      await sql`
+        insert into public.tour_bookings (
+          id, tour_slug, tour_title, full_name, email, phone, travel_date,
+          travelers, special_requests, estimated_total, currency, status,
+          payment_status, paystack_reference, paid_amount, paid_at, created_at
+        ) values (
+          ${booking.id},
+          ${booking.tourSlug},
+          ${booking.tourTitle},
+          ${booking.fullName},
+          ${booking.email},
+          ${booking.phone},
+          ${booking.travelDate},
+          ${booking.travelers},
+          ${booking.specialRequests ?? null},
+          ${booking.estimatedTotal},
+          ${booking.currency},
+          ${booking.status},
+          ${booking.paymentStatus},
+          ${booking.paystackReference ?? null},
+          ${booking.paidAmount ?? null},
+          ${booking.paidAt ?? null},
+          ${booking.createdAt}
+        )
+        on conflict (id) do update set
+          tour_slug = excluded.tour_slug,
+          tour_title = excluded.tour_title,
+          full_name = excluded.full_name,
+          email = excluded.email,
+          phone = excluded.phone,
+          travel_date = excluded.travel_date,
+          travelers = excluded.travelers,
+          special_requests = excluded.special_requests,
+          estimated_total = excluded.estimated_total,
+          currency = excluded.currency,
+          status = excluded.status,
+          payment_status = excluded.payment_status,
+          paystack_reference = excluded.paystack_reference,
+          paid_amount = excluded.paid_amount,
+          paid_at = excluded.paid_at
+      `;
+      return;
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return;
   }
 
   const bookings = await readAll();
@@ -99,18 +104,14 @@ export async function saveBooking(booking: TourBooking) {
 }
 
 export async function getBookingById(id: string) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("tour_bookings")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-    if (error) {
-      if (isMissingTableError(error)) return null;
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`select * from public.tour_bookings where id = ${id} limit 1`;
+      return rows[0] ? fromRow(rows[0]) : null;
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return data ? fromRow(data) : null;
   }
 
   const bookings = await readAll();
@@ -118,18 +119,18 @@ export async function getBookingById(id: string) {
 }
 
 export async function getBookingByReference(reference: string) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("tour_bookings")
-      .select("*")
-      .eq("paystack_reference", reference)
-      .maybeSingle();
-    if (error) {
-      if (isMissingTableError(error)) return null;
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        select * from public.tour_bookings
+        where paystack_reference = ${reference}
+        limit 1
+      `;
+      return rows[0] ? fromRow(rows[0]) : null;
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return data ? fromRow(data) : null;
   }
 
   const bookings = await readAll();
@@ -137,17 +138,17 @@ export async function getBookingByReference(reference: string) {
 }
 
 export async function listBookings() {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("tour_bookings")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) {
-      if (isMissingTableError(error)) return [];
-      throw new Error(error.message);
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        select * from public.tour_bookings
+        order by created_at desc
+      `;
+      return rows.map((row) => fromRow(row));
+    } catch (error) {
+      if (!isMissingTableError(error)) throw error;
     }
-    return (data ?? []).map((row) => fromRow(row));
   }
 
   const bookings = await readAll();
@@ -156,25 +157,24 @@ export async function listBookings() {
   );
 }
 
-export async function updateBookingStatus(
-  id: string,
-  status: TourBooking["status"],
-) {
-  const supabase = supabaseClient();
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("tour_bookings")
-      .update({ status })
-      .eq("id", id)
-      .select("*")
-      .single();
-    if (error) {
+export async function updateBookingStatus(id: string, status: TourBooking["status"]) {
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getSql();
+      const rows = await sql`
+        update public.tour_bookings
+        set status = ${status}
+        where id = ${id}
+        returning *
+      `;
+      if (!rows[0]) throw new Error("Booking not found");
+      return fromRow(rows[0]);
+    } catch (error) {
       if (isMissingTableError(error)) {
-        throw new Error("Bookings table is not set up. Run supabase/setup-all.sql.");
+        throw new Error("Bookings table is not set up. Run npm run db:setup.");
       }
-      throw new Error(error.message);
+      throw error;
     }
-    return fromRow(data);
   }
 
   const bookings = await readAll();

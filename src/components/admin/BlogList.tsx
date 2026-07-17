@@ -11,7 +11,7 @@ import {
 import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import type { AdminBlogPost, ContentStatus } from "@/lib/content-types";
-import type { StaffRole } from "@/lib/supabase/auth";
+import type { StaffRole } from "@/lib/auth/staff";
 
 type Filter = "all" | ContentStatus;
 
@@ -37,7 +37,7 @@ function PostThumbnail({ post }: { post: AdminBlogPost }) {
       height={48}
       className="h-12 w-12 object-cover"
       unoptimized={
-        !post.image.includes("supabase.co") && !post.image.includes("unsplash.com")
+        !post.image.includes("/media/") && !post.image.includes("unsplash.com")
       }
     />
   );
