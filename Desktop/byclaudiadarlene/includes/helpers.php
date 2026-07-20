@@ -25,10 +25,27 @@ function asset(string $path): string
     return url(ltrim($path, '/'));
 }
 
-function setting(string $key, ?string $default = null): ?string
+/** Absolute URL of the page currently being requested (for canonical/og:url fallback). */
+function current_url(): string
+{
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $uri = $_SERVER['REQUEST_URI'] ?? '/';
+    return $scheme . '://' . $host . $uri;
+}
+
+/** Render a JSON-LD structured-data script tag from a PHP array. */
+function json_ld(array $data): string
+{
+    return '<script type="application/ld+json">'
+        . json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+        . '</script>';
+}
+
+function settings_all(bool $fresh = false): array
 {
     static $cache = null;
-    if ($cache === null) {
+    if ($cache === null || $fresh) {
         $cache = [];
         try {
             $rows = db()->query('SELECT setting_key, setting_value FROM settings')->fetchAll();
@@ -39,7 +56,26 @@ function setting(string $key, ?string $default = null): ?string
             $cache = [];
         }
     }
+    return $cache;
+}
+
+function setting(string $key, ?string $default = null): ?string
+{
+    $cache = settings_all();
     return $cache[$key] ?? $default;
+}
+
+function set_setting(string $key, string $value): void
+{
+    $driver = db()->getAttribute(PDO::ATTR_DRIVER_NAME);
+    if ($driver === 'sqlite') {
+        db()->prepare('INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value')
+            ->execute([$key, $value]);
+    } else {
+        db()->prepare('INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
+            ->execute([$key, $value]);
+    }
+    settings_all(true);
 }
 
 function csrf_token(): string
@@ -162,4 +198,73 @@ function admin_active_nav(string $file): string
 function admin_icon(string $name, string $classes = 'w-4 h-4'): string
 {
     return '<i data-lucide="' . e($name) . '" class="' . e($classes) . '"></i>';
+}
+
+/**
+ * Available shipping methods (carriers) offered at checkout.
+ * Returns [id => ['label' => string, 'rate' => float, 'carrier' => string]].
+ * Falls back to a single "Standard" method if no carrier is enabled.
+ */
+function shipping_methods(): array
+{
+    $methods = [];
+    if (setting('ship_dhl_enabled', '0') === '1') {
+        $methods['dhl'] = [
+            'label' => (string) (setting('ship_dhl_label', 'DHL Express') ?: 'DHL Express'),
+            'rate' => (float) (setting('ship_dhl_rate', '0') ?: 0),
+            'carrier' => 'dhl',
+        ];
+    }
+    if (setting('ship_fedex_enabled', '0') === '1') {
+        $methods['fedex'] = [
+            'label' => (string) (setting('ship_fedex_label', 'FedEx International') ?: 'FedEx International'),
+            'rate' => (float) (setting('ship_fedex_rate', '0') ?: 0),
+            'carrier' => 'fedex',
+        ];
+    }
+    if (!$methods) {
+        $methods['standard'] = [
+            'label' => 'Standard shipping',
+            'rate' => (float) (setting('shipping_flat', '15') ?: 15),
+            'carrier' => 'standard',
+        ];
+    }
+    return $methods;
+}
+
+/** Human label for a stored carrier code. */
+function carrier_label(?string $carrier): string
+{
+    return match (strtolower((string) $carrier)) {
+        'dhl' => 'DHL',
+        'fedex' => 'FedEx',
+        'standard' => 'Standard',
+        default => $carrier ? ucfirst($carrier) : '—',
+    };
+}
+
+/** Public tracking URL for a carrier + tracking number, or '' if not trackable. */
+function tracking_url(?string $carrier, ?string $number): string
+{
+    $number = trim((string) $number);
+    if ($number === '') {
+        return '';
+    }
+    return match (strtolower((string) $carrier)) {
+        'dhl' => 'https://www.dhl.com/en/express/tracking.html?AWB=' . urlencode($number),
+        'fedex' => 'https://www.fedex.com/fedextrack/?trknbr=' . urlencode($number),
+        default => '',
+    };
+}
+
+/** Recompute a product's rating + review_count from approved reviews. */
+function recompute_product_rating(int $productId): void
+{
+    $stmt = db()->prepare('SELECT COUNT(*) c, AVG(rating) a FROM reviews WHERE product_id = ? AND is_approved = 1');
+    $stmt->execute([$productId]);
+    $row = $stmt->fetch();
+    $count = (int) ($row['c'] ?? 0);
+    $avg = $count > 0 ? round((float) $row['a'], 1) : 5.0;
+    db()->prepare('UPDATE products SET rating = ?, review_count = ? WHERE id = ?')
+        ->execute([$avg, $count, $productId]);
 }

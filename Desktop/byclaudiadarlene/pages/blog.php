@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 $pageTitle = 'Blog – Hair by Claudia Darlene';
 $pageDescription = 'Texture tips, hair care rituals, and curl stories from Hair by Claudia Darlene.';
+$canonical = url('blog');
 $posts = db()->query('SELECT * FROM blog_posts WHERE is_published = 1 ORDER BY published_at DESC, id DESC')->fetchAll();
 
 require ROOT_PATH . '/includes/header.php';

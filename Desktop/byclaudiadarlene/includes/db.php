@@ -80,6 +80,7 @@ function init_sqlite_schema(PDO $pdo): void
       compare_at_price REAL,
       image TEXT,
       gallery TEXT,
+      video TEXT,
       is_featured INTEGER NOT NULL DEFAULT 0,
       is_active INTEGER NOT NULL DEFAULT 1,
       on_sale INTEGER NOT NULL DEFAULT 0,
@@ -112,7 +113,11 @@ function init_sqlite_schema(PDO $pdo): void
       product_id INTEGER NOT NULL,
       variant_id INTEGER NOT NULL,
       quantity INTEGER NOT NULL DEFAULT 1,
-      unit_price REAL NOT NULL
+      unit_price REAL NOT NULL,
+      gift_recipient_name TEXT,
+      gift_recipient_email TEXT,
+      gift_sender_name TEXT,
+      gift_message TEXT
     );
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -134,7 +139,10 @@ function init_sqlite_schema(PDO $pdo): void
       shipping_city TEXT,
       shipping_country TEXT,
       shipping_postcode TEXT,
+      shipping_carrier TEXT,
       tracking_number TEXT,
+      gift_card_code TEXT,
+      gift_card_amount REAL,
       notes TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
@@ -147,7 +155,12 @@ function init_sqlite_schema(PDO $pdo): void
       variant_label TEXT,
       quantity INTEGER NOT NULL DEFAULT 1,
       unit_price REAL NOT NULL,
-      line_total REAL NOT NULL
+      line_total REAL NOT NULL,
+      gift_recipient_name TEXT,
+      gift_recipient_email TEXT,
+      gift_sender_name TEXT,
+      gift_message TEXT,
+      gift_amount REAL
     );
     CREATE TABLE IF NOT EXISTS payments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -158,6 +171,21 @@ function init_sqlite_schema(PDO $pdo): void
       currency TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending',
       raw_payload TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS gift_cards (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT NOT NULL UNIQUE,
+      initial_amount REAL NOT NULL DEFAULT 0,
+      balance REAL NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'GBP',
+      recipient_name TEXT,
+      recipient_email TEXT,
+      sender_name TEXT,
+      message TEXT,
+      purchaser_email TEXT,
+      order_id INTEGER,
+      status TEXT NOT NULL DEFAULT 'active',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS currency_rates (
@@ -212,6 +240,26 @@ function init_sqlite_schema(PDO $pdo): void
       is_published INTEGER NOT NULL DEFAULT 0,
       published_at TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      user_id INTEGER,
+      author_name TEXT NOT NULL,
+      rating INTEGER NOT NULL DEFAULT 5,
+      title TEXT,
+      body TEXT NOT NULL,
+      is_approved INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS subscribers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      phone TEXT,
+      email TEXT,
+      source TEXT DEFAULT 'popup',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(phone)
     );
     ");
 }

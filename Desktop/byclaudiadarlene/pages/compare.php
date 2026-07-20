@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 $pageTitle = 'Compare – Hair by Claudia Darlene';
 $pageDescription = 'Compare hair textures, prices, and details side by side.';
+$robots = 'noindex, follow';
 
 $ids = [];
 foreach (explode(',', (string) get('ids', '')) as $raw) {

@@ -19,6 +19,30 @@ $relatedPosts = $related->fetchAll();
 $pageTitle = $post['title'] . ' – Hair by Claudia Darlene';
 $pageDescription = $post['excerpt'] ?? $post['title'];
 
+// --- SEO ---
+$canonical = url('blog/' . $post['slug']);
+$ogType = 'article';
+if (!empty($post['image'])) {
+    $ogImage = $post['image'];
+}
+$publishedIso = !empty($post['published_at']) ? date('c', (int) strtotime((string) $post['published_at'])) : null;
+$jsonLd = [
+    '@context' => 'https://schema.org',
+    '@type' => 'BlogPosting',
+    'headline' => $post['title'],
+    'description' => strip_tags((string) ($post['excerpt'] ?? '')),
+    'image' => !empty($post['image']) ? asset($post['image']) : asset((string) setting('logo_path', 'assets/images/logo.png')),
+    'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $canonical],
+    'author' => ['@type' => 'Organization', 'name' => setting('store_name', 'By Claudia Darlene')],
+    'publisher' => [
+        '@type' => 'Organization',
+        'name' => setting('store_name', 'By Claudia Darlene'),
+        'logo' => ['@type' => 'ImageObject', 'url' => asset((string) setting('logo_path', 'assets/images/logo.png'))],
+    ],
+    'datePublished' => $publishedIso,
+    'dateModified' => $publishedIso,
+];
+
 require ROOT_PATH . '/includes/header.php';
 ?>
 
@@ -41,6 +65,15 @@ require ROOT_PATH . '/includes/header.php';
 
     <div class="prose-blog text-brand-ink/80 leading-relaxed space-y-5 text-[17px]">
       <?= $post['body'] ?>
+    </div>
+
+    <div class="mt-10 pt-6 border-t border-brand-ink/10">
+      <?php
+      $shareUrl = $canonical;
+      $shareTitle = $post['title'];
+      $shareImage = !empty($post['image']) ? asset((string) $post['image']) : '';
+      require ROOT_PATH . '/includes/partials/share.php';
+      ?>
     </div>
   </div>
 

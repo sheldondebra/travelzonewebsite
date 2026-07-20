@@ -25,8 +25,15 @@ $adminQ = trim((string) get('q', ''));
       <nav class="space-y-1 text-sm">
         <a class="<?= admin_active_nav('index.php') ?>" href="index.php"><?= admin_icon('layout-dashboard') ?> Dashboard</a>
         <a class="<?= admin_active_nav('products.php') ?>" href="products.php"><?= admin_icon('package') ?> Products</a>
+        <a class="<?= admin_active_nav('categories.php') ?>" href="categories.php"><?= admin_icon('folder-tree') ?> Categories</a>
         <a class="<?= admin_active_nav('orders.php') ?>" href="orders.php"><?= admin_icon('receipt-text') ?> Orders</a>
         <a class="<?= admin_active_nav('customers.php') ?>" href="customers.php"><?= admin_icon('users') ?> Customers</a>
+        <a class="<?= admin_active_nav('reviews.php') ?>" href="reviews.php"><?= admin_icon('star') ?> Reviews</a>
+        <a class="<?= admin_active_nav('coupons.php') ?>" href="coupons.php"><?= admin_icon('ticket-percent') ?> Coupons</a>
+        <a class="<?= admin_active_nav('gift-cards.php') ?>" href="gift-cards.php"><?= admin_icon('gift') ?> Gift cards</a>
+        <a class="<?= admin_active_nav('subscribers.php') ?>" href="subscribers.php"><?= admin_icon('mail-plus') ?> Subscribers</a>
+        <a class="<?= admin_active_nav('transactions.php') ?>" href="transactions.php"><?= admin_icon('credit-card') ?> Transactions</a>
+        <a class="<?= admin_active_nav('integrations.php') ?>" href="integrations.php"><?= admin_icon('plug') ?> Integrations</a>
         <a class="<?= admin_active_nav('settings.php') ?>" href="settings.php"><?= admin_icon('settings') ?> Settings</a>
         <div class="pt-4 mt-4 border-t border-white/10 space-y-1">
           <a class="flex items-center gap-3 rounded-lg px-3 py-2 text-stone-300 hover:text-white hover:bg-white/5" href="../index.php" target="_blank"><?= admin_icon('external-link') ?> View store</a>
@@ -38,8 +45,15 @@ $adminQ = trim((string) get('q', ''));
       <div class="md:hidden mb-6 flex gap-4 text-sm overflow-x-auto">
         <a href="index.php" class="flex items-center gap-1"><?= admin_icon('layout-dashboard') ?> Dashboard</a>
         <a href="products.php" class="flex items-center gap-1"><?= admin_icon('package') ?> Products</a>
+        <a href="categories.php" class="flex items-center gap-1"><?= admin_icon('folder-tree') ?> Categories</a>
         <a href="orders.php" class="flex items-center gap-1"><?= admin_icon('receipt-text') ?> Orders</a>
         <a href="customers.php" class="flex items-center gap-1"><?= admin_icon('users') ?> Customers</a>
+        <a href="reviews.php" class="flex items-center gap-1"><?= admin_icon('star') ?> Reviews</a>
+        <a href="coupons.php" class="flex items-center gap-1"><?= admin_icon('ticket-percent') ?> Coupons</a>
+        <a href="gift-cards.php" class="flex items-center gap-1"><?= admin_icon('gift') ?> Gift cards</a>
+        <a href="subscribers.php" class="flex items-center gap-1"><?= admin_icon('mail-plus') ?> Subscribers</a>
+        <a href="transactions.php" class="flex items-center gap-1"><?= admin_icon('credit-card') ?> Transactions</a>
+        <a href="integrations.php" class="flex items-center gap-1"><?= admin_icon('plug') ?> Integrations</a>
         <a href="settings.php" class="flex items-center gap-1"><?= admin_icon('settings') ?> Settings</a>
       </div>
 

@@ -10,12 +10,14 @@ $page = preg_replace('/[^a-z0-9\-]/', '', strtolower((string) ($_GET['page'] ?? 
 
 $allowed = [
     'home', 'shop', 'product', 'cart', 'checkout', 'about', 'faq', 'contact',
-    'login', 'register', 'logout', 'account', 'order-success', 'wishlist', 'blog', 'blog-post', 'compare',
+    'login', 'register', 'logout', 'account', 'order-success', 'wishlist', 'blog', 'blog-post', 'compare', 'checkout-return',
+    'gift-cards',
+    'returns-policy', 'privacy-policy', 'shipping-policy', 'terms',
 ];
 
 if (!in_array($page, $allowed, true)) {
     http_response_code(404);
-    $page = 'home';
+    $page = '404';
 }
 
 if ($page === 'logout') {
@@ -27,7 +29,7 @@ if ($page === 'logout') {
 $file = __DIR__ . '/pages/' . $page . '.php';
 if (!file_exists($file)) {
     http_response_code(404);
-    $file = __DIR__ . '/pages/home.php';
+    $file = __DIR__ . '/pages/404.php';
 }
 
 require $file;
