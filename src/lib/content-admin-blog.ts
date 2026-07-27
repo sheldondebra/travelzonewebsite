@@ -26,8 +26,28 @@ function rowToAdminBlogPost(row: Record<string, unknown>): AdminBlogPost {
 export async function listAdminBlogPosts(): Promise<AdminBlogPost[]> {
   const sql = getSql();
   try {
-    const rows = await sql`select * from public.blog_posts order by updated_at desc`;
-    return rows.map((row) => rowToAdminBlogPost(row));
+    // List UI only needs metadata — skip heavy body_html until edit.
+    const rows = await sql`
+      select
+        id, slug, title, excerpt, image, category, read_time,
+        display_date, status, updated_at
+      from public.blog_posts
+      order by updated_at desc
+    `;
+    return rows.map((row) => ({
+      slug: row.slug as string,
+      title: row.title as string,
+      excerpt: (row.excerpt as string) ?? "",
+      bodyHtml: "",
+      content: [],
+      image: normalizeMediaUrl((row.image as string) ?? ""),
+      date: (row.display_date as string) ?? "",
+      category: (row.category as string) ?? "",
+      readTime: (row.read_time as string) ?? "5 min read",
+      id: row.id as string,
+      status: row.status as ContentStatus,
+      updatedAt: row.updated_at as string,
+    }));
   } catch (error) {
     if (isMissingTableError(error)) return [];
     throw error;

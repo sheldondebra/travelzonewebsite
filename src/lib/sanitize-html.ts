@@ -1,4 +1,4 @@
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 import { normalizeHtmlImageUrls } from "@/lib/media-url";
 
 const ALLOWED_TAGS = [
@@ -17,20 +17,29 @@ const ALLOWED_TAGS = [
   "blockquote",
 ];
 
-const ALLOWED_ATTR = ["href", "src", "alt", "title", "target", "rel"];
+const ALLOWED_ATTR: Record<string, string[]> = {
+  a: ["href", "name", "target", "rel", "title"],
+  img: ["src", "alt", "title"],
+};
 
+/**
+ * Server-safe HTML sanitizer (no jsdom).
+ * isomorphic-dompurify pulled jsdom into admin/blog and crashed Vercel.
+ */
 export function sanitizeBlogHtml(html: string): string {
   if (!html.trim()) return "";
 
   try {
-    const sanitized = DOMPurify.sanitize(html, {
-      ALLOWED_TAGS,
-      ALLOWED_ATTR,
-      ALLOW_DATA_ATTR: false,
-      ADD_ATTR: ["target"],
-    })
-      .replace(/<a /g, '<a rel="noopener noreferrer" ')
-      .trim();
+    const sanitized = sanitizeHtml(html, {
+      allowedTags: ALLOWED_TAGS,
+      allowedAttributes: ALLOWED_ATTR,
+      allowedSchemes: ["http", "https", "mailto"],
+      transformTags: {
+        a: sanitizeHtml.simpleTransform("a", {
+          rel: "noopener noreferrer",
+        }),
+      },
+    }).trim();
 
     return normalizeHtmlImageUrls(sanitized);
   } catch {
