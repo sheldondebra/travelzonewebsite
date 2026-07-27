@@ -40,7 +40,7 @@ export default async function AdminBookingDetailPage({ params }: Props) {
               <DetailRow
                 label="Email"
                 value={
-                  <a href={`mailto:${booking.email}`} className="text-[#2271b1]">
+                  <a href={`mailto:${booking.email}`} className="text-navy">
                     {booking.email}
                   </a>
                 }
@@ -48,7 +48,7 @@ export default async function AdminBookingDetailPage({ params }: Props) {
               <DetailRow
                 label="Phone"
                 value={
-                  <a href={`tel:${booking.phone}`} className="text-[#2271b1]">
+                  <a href={`tel:${booking.phone}`} className="text-navy">
                     {booking.phone}
                   </a>
                 }
@@ -57,7 +57,7 @@ export default async function AdminBookingDetailPage({ params }: Props) {
               <DetailRow
                 label="Package"
                 value={
-                  <Link href={`/tours/${booking.tourSlug}`} target="_blank" className="text-[#2271b1]">
+                  <Link href={`/tours/${booking.tourSlug}`} target="_blank" className="text-navy">
                     View tour
                   </Link>
                 }

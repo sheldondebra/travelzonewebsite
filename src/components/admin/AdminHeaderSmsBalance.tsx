@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import { HiArrowPath, HiChatBubbleBottomCenterText } from "react-icons/hi2";
 import {
   refreshSplitSmsBalanceAction,
@@ -44,14 +43,7 @@ export function AdminHeaderSmsBalance({
   const [pending, startTransition] = useTransition();
 
   if (!splitsmsReady) {
-    if (role !== "admin") return null;
-
-    return (
-      <Link href="/admin/settings" className="admin-bar-sms admin-bar-sms-muted">
-        <HiChatBubbleBottomCenterText className="admin-bar-sms-icon" aria-hidden />
-        <span>Configure SMS</span>
-      </Link>
-    );
+    return null;
   }
 
   function refresh() {

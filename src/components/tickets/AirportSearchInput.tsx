@@ -35,11 +35,14 @@ export function AirportSearchInput({
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(value);
+  const [prevValue, setPrevValue] = useState(value);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [activeKey, setActiveKey] = useState(`${value}:${0}`);
 
-  useEffect(() => {
+  if (value !== prevValue) {
+    setPrevValue(value);
     setQuery(value);
-  }, [value]);
+  }
 
   const groups = useMemo(() => {
     return searchAirportGroups(query, 12).map((group) => ({
@@ -50,11 +53,46 @@ export function AirportSearchInput({
     })).filter((group) => group.airports.length > 0);
   }, [query, excludeValue]);
 
-  const results = useMemo(() => groups.flatMap((group) => group.airports), [groups]);
+  const indexedGroups = useMemo(() => {
+    const flat = groups.flatMap((group) =>
+      group.airports.map((airport) => ({ group, airport })),
+    );
 
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [results.length, query]);
+    const byCategory = new Map<
+      string,
+      {
+        category: (typeof groups)[number]["category"];
+        label: string;
+        airports: Array<{ airport: Airport; index: number }>;
+      }
+    >();
+
+    flat.forEach((item, index) => {
+      const existing = byCategory.get(item.group.category);
+      if (existing) {
+        existing.airports.push({ airport: item.airport, index });
+        return;
+      }
+      byCategory.set(item.group.category, {
+        category: item.group.category,
+        label: item.group.label,
+        airports: [{ airport: item.airport, index }],
+      });
+    });
+
+    return Array.from(byCategory.values());
+  }, [groups]);
+
+  const results = useMemo(
+    () => indexedGroups.flatMap((group) => group.airports.map((item) => item.airport)),
+    [indexedGroups],
+  );
+
+  const resultsKey = `${results.length}:${query}`;
+  if (resultsKey !== activeKey) {
+    setActiveKey(resultsKey);
+    if (activeIndex !== 0) setActiveIndex(0);
+  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -78,12 +116,14 @@ export function AirportSearchInput({
     setQuery(next);
     onChange(next);
     setOpen(true);
+    setActiveIndex(0);
   }
 
   function handleClear() {
     onChange("");
     setQuery("");
     setOpen(true);
+    setActiveIndex(0);
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -107,8 +147,6 @@ export function AirportSearchInput({
       setOpen(false);
     }
   }
-
-  let resultIndex = -1;
 
   return (
     <div ref={containerRef} className="relative">
@@ -156,16 +194,13 @@ export function AirportSearchInput({
           role="listbox"
           className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg"
         >
-          {groups.map((group) => (
+          {indexedGroups.map((group) => (
             <li key={group.category} role="presentation">
               <p className="sticky top-0 bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-text-muted">
                 {group.label}
               </p>
               <ul role="group" aria-label={group.label}>
-                {group.airports.map((airport) => {
-                  resultIndex += 1;
-                  const index = resultIndex;
-                  const formatted = formatAirport(airport);
+                {group.airports.map(({ airport, index }) => {
                   const active = index === activeIndex;
 
                   return (

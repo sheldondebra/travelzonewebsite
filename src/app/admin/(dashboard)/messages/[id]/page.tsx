@@ -45,7 +45,7 @@ export default async function AdminMessageDetailPage({ params }: Props) {
               <DetailRow
                 label="Email"
                 value={
-                  <a href={`mailto:${message.email}`} className="text-[#2271b1]">
+                  <a href={`mailto:${message.email}`} className="text-navy">
                     {message.email}
                   </a>
                 }
@@ -53,7 +53,7 @@ export default async function AdminMessageDetailPage({ params }: Props) {
               <DetailRow
                 label="Phone"
                 value={
-                  <a href={`tel:${message.phone}`} className="text-[#2271b1]">
+                  <a href={`tel:${message.phone}`} className="text-navy">
                     {message.phone}
                   </a>
                 }

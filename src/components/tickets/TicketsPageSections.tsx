@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { PhoneIcon } from "@/components/ContactIcons";
 import { ServiceIcon, getServiceTone } from "@/components/ServiceIcons";
 import { contactInfo, services, ticketingPage } from "@/lib/content";

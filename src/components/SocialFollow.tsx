@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { SocialLinksDark, SocialProfileList } from "@/components/SocialLinks";
 import { socialLinks } from "@/lib/social";
 

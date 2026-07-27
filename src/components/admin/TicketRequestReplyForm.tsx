@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { replyTicketRequestAction } from "@/app/admin/actions/tickets";
 import { AdminNotice } from "@/components/admin/AdminChrome";
 import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
@@ -85,6 +85,7 @@ export function TicketRequestReplyForm({
   );
   const [reply, setReply] = useState("");
   const [state, formAction, pending] = useActionState(replyTicketRequestAction, undefined);
+  const [clearedFor, setClearedFor] = useState(state);
 
   const whatsAppMessage = `Hi ${fullName}, regarding your ticket request ${requestId} (${route}): `;
   const whatsAppUrl = getCustomerWhatsAppUrl(recipientPhone, whatsAppMessage);
@@ -93,17 +94,16 @@ export function TicketRequestReplyForm({
     loadingMessage: "Sending message…",
   });
 
-  useEffect(() => {
-    if (state?.success) {
-      setReply("");
-    }
-  }, [state]);
+  if (state?.success && state !== clearedFor) {
+    setClearedFor(state);
+    if (reply) setReply("");
+  }
 
   if (!emailReady && !smsReady) {
     return (
       <AdminNotice variant="warning">
         Configure Resend or SMTP under{" "}
-        <a href="/admin/settings?tab=smtp" className="text-[#2271b1] underline">
+        <a href="/admin/settings?tab=smtp" className="text-navy underline hover:text-brand-red">
           Settings → Email
         </a>{" "}
         to message customers from the dashboard.
@@ -141,7 +141,7 @@ export function TicketRequestReplyForm({
                 key={template.id}
                 type="button"
                 onClick={() => setReply(template.text)}
-                className="rounded border border-[#dcdcde] bg-white px-3 py-1.5 text-xs font-semibold text-[#1d2327] hover:border-[#2271b1] hover:text-[#2271b1]"
+                className="rounded-[10px] border border-[#e0d9ce] bg-white px-3 py-1.5 text-xs font-semibold text-navy hover:border-navy/40 hover:text-brand-red"
               >
                 {template.label}
               </button>

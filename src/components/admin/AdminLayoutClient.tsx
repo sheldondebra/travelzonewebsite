@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { AdminHeader } from "@/components/admin/AdminHeader";
+import {
+  AdminHeader,
+  type AdminHeaderNotifications,
+} from "@/components/admin/AdminHeader";
 import { AdminToastProvider } from "@/components/admin/AdminToastProvider";
 import type { SplitSmsBalance } from "@/lib/splitsms";
 import type { StaffRole } from "@/lib/auth/staff";
@@ -12,6 +15,7 @@ type Props = {
   splitsmsReady: boolean;
   smsBalance: SplitSmsBalance | null;
   smsBalanceError: string | null;
+  notifications: AdminHeaderNotifications;
   sidebar: ReactNode;
   children: ReactNode;
 };
@@ -22,6 +26,7 @@ export function AdminLayoutClient({
   splitsmsReady,
   smsBalance,
   smsBalanceError,
+  notifications,
   sidebar,
   children,
 }: Props) {
@@ -36,6 +41,7 @@ export function AdminLayoutClient({
           splitsmsReady={splitsmsReady}
           smsBalance={smsBalance}
           smsBalanceError={smsBalanceError}
+          notifications={notifications}
           menuOpen={menuOpen}
           onMenuToggle={() => setMenuOpen((open) => !open)}
         />

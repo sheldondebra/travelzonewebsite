@@ -49,13 +49,13 @@ export function SplitSmsBalancePanel({ initialBalance, initialError }: Props) {
     <div className="admin-settings-balance">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-[13px] font-semibold text-[#1d2327]">Account balance</h3>
+          <h3 className="text-[13px] font-semibold text-navy">Account balance</h3>
           <p className="admin-field-hint mt-0.5">Wallet and SMS credits from SplitSMS</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {balance ? (
             <span
-              className={`inline-flex rounded-[3px] px-1.5 py-0.5 text-[11px] font-semibold ${
+              className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                 balance.sandbox
                   ? "bg-[#fcf9e8] text-[#996800]"
                   : "bg-[#edfaef] text-[#007017]"

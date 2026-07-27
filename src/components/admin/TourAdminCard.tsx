@@ -19,7 +19,7 @@ export function TourAdminCard({ tour, role }: Props) {
   });
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-xl border border-parchment bg-white shadow-sm transition-shadow hover:shadow-md">
+    <article className="group flex flex-col overflow-hidden rounded-2xl border border-[#e0d9ce] bg-white shadow-none">
       <div className="relative aspect-[16/10] overflow-hidden bg-cream">
         {tour.image ? (
           <Image

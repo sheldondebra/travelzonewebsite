@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useActionState, useState, type ReactNode } from "react";
+import { useActionState, useState, type ReactNode } from "react";
 import {
   saveNotificationSettingsAction,
   savePaystackSettingsAction,
@@ -53,7 +53,7 @@ function Toggle({
         name={name}
         type="checkbox"
         defaultChecked={defaultChecked}
-        className="mt-0.5 h-4 w-4 shrink-0 accent-[#2271b1]"
+        className="mt-0.5 h-4 w-4 shrink-0 accent-brand-red"
       />
       <span>
         <span className="block text-[13px] font-semibold text-[#1d2327]">{label}</span>
@@ -390,7 +390,7 @@ function EmailPanel({ settings, revision }: { settings: AdminSettingsView; revis
             />
             <p className="admin-field-hint">
               Create a key at{" "}
-              <a href="https://resend.com/api-keys" target="_blank" className="text-[#2271b1]">
+              <a href="https://resend.com/api-keys" target="_blank" className="text-navy hover:text-brand-red">
                 resend.com/api-keys
               </a>
               . Verify your sending domain in Resend before going live.

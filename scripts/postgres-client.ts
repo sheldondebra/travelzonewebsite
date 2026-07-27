@@ -28,13 +28,30 @@ function connectionRequiresSsl(databaseUrl: string) {
   }
 }
 
+function normalizeDatabaseUrl(databaseUrl: string) {
+  try {
+    const normalized = databaseUrl.replace(/^postgres(ql)?:/, "https:");
+    const url = new URL(normalized);
+    url.searchParams.delete("channel_binding");
+    if (!url.searchParams.get("sslmode")) {
+      url.searchParams.set("sslmode", "require");
+    }
+    return url.toString().replace(/^https:/, "postgresql:");
+  } catch {
+    return databaseUrl;
+  }
+}
+
 /** Remote managed Postgres hosts may need SSL; local/VPS Postgres often does not. */
 export function createPostgresClient(databaseUrl: string) {
-  const needsSsl = connectionRequiresSsl(databaseUrl);
+  const connectionUrl = normalizeDatabaseUrl(databaseUrl);
+  const needsSsl = connectionRequiresSsl(connectionUrl);
 
-  return postgres(databaseUrl, {
-    max: 1,
-    ssl: needsSsl ? "require" : false,
+  return postgres(connectionUrl, {
+    max: 5,
+    idle_timeout: 20,
     connect_timeout: 10,
+    prepare: false,
+    ssl: needsSsl ? "require" : false,
   });
 }

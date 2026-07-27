@@ -43,7 +43,7 @@ export function ImageUpload({ label, value, folder, onChange }: Props) {
       <label className="admin-label">{label}</label>
       <div className="flex flex-wrap items-start gap-4">
         {value ? (
-          <div className="relative h-24 w-36 overflow-hidden rounded-[3px] border border-[#c3c4c7]">
+          <div className="relative h-24 w-36 overflow-hidden rounded-[10px] border border-[#e0d9ce]">
             <Image src={value} alt="" fill className="object-cover" sizes="144px" />
           </div>
         ) : null}

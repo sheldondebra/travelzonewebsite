@@ -14,12 +14,10 @@ export function AdminStatCard({ label, value, hint, href, icon, highlight }: Pro
   const content = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-          {label}
-        </p>
+        <p className="admin-stat-tile-label">{label}</p>
         {icon ? (
           <span
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] ${
               highlight ? "bg-brand-red/10 text-brand-red" : "bg-cream text-navy/70"
             }`}
           >
@@ -27,21 +25,12 @@ export function AdminStatCard({ label, value, hint, href, icon, highlight }: Pro
           </span>
         ) : null}
       </div>
-      <p className="heading-serif mt-3 text-3xl text-navy">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-text-muted">{hint}</p> : null}
-      {href ? (
-        <p className="mt-3 text-xs font-semibold text-brand-red opacity-0 transition-opacity group-hover:opacity-100">
-          View details →
-        </p>
-      ) : null}
+      <p className="admin-stat-tile-value">{value}</p>
+      {hint ? <p className="admin-stat-tile-hint">{hint}</p> : null}
     </>
   );
 
-  const className = `group rounded-xl border bg-white px-5 py-4 shadow-sm transition-all ${
-    highlight
-      ? "border-brand-red/30 hover:border-brand-red/50 hover:shadow-md"
-      : "border-parchment hover:border-parchment hover:shadow-md"
-  }`;
+  const className = `admin-stat-tile ${highlight ? "admin-stat-tile-highlight" : ""}`.trim();
 
   if (href) {
     return (

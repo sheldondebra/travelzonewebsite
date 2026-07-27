@@ -70,7 +70,7 @@ export function ConsultationAvailabilityForm({ availability, canEdit }: Props) {
     <form action={formAction} className="admin-schedule-form">
       <p className="admin-schedule-intro">
         Controls when customers can book free consultations on{" "}
-        <a href="/consultation" target="_blank" className="text-[#2271b1] underline">
+        <a href="/consultation" target="_blank" className="text-navy underline hover:text-brand-red">
           /consultation
         </a>
         . Current schedule: {getOpenDaysSummary(availability)}

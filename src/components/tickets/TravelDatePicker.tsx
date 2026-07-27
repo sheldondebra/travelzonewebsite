@@ -47,6 +47,15 @@ export function TravelDatePicker({
     : startOfMonth(new Date());
 
   const [viewDate, setViewDate] = useState(initialView);
+  const [syncedValue, setSyncedValue] = useState(value);
+
+  if (value !== syncedValue) {
+    setSyncedValue(value);
+    if (value) {
+      const parsed = parseIso(value);
+      setViewDate(startOfMonth(new Date(parsed.year, parsed.month, 1)));
+    }
+  }
 
   const viewYear = viewDate.getFullYear();
   const viewMonth = viewDate.getMonth();
@@ -75,13 +84,6 @@ export function TravelDatePicker({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    if (value) {
-      const parsed = parseIso(value);
-      setViewDate(startOfMonth(new Date(parsed.year, parsed.month, 1)));
-    }
-  }, [value]);
 
   function shiftMonth(delta: number) {
     setViewDate(new Date(viewYear, viewMonth + delta, 1));

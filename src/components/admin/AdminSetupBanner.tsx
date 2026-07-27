@@ -24,14 +24,14 @@ export async function AdminSetupBanner() {
       <p className="font-semibold">Database setup required</p>
       <p className="mt-1">
         Admin tables are not created yet. Run{" "}
-        <code className="bg-[#f0f0f1] px-1">npm run bootstrap</code> locally
-        (requires <code className="bg-[#f0f0f1] px-1">DATABASE_URL</code> in{" "}
-        <code className="bg-[#f0f0f1] px-1">.env.local</code>), then{" "}
-        <code className="bg-[#f0f0f1] px-1">npm run create-admin</code> to add
+        <code className="rounded bg-[#f3efe8] px-1">npm run bootstrap</code> locally
+        (requires <code className="rounded bg-[#f3efe8] px-1">DATABASE_URL</code> in{" "}
+        <code className="rounded bg-[#f3efe8] px-1">.env.local</code>), then{" "}
+        <code className="rounded bg-[#f3efe8] px-1">npm run create-admin</code> to add
         your first admin user.
       </p>
       <p className="mt-2">
-        <Link href="/admin/setup" className="text-[#2271b1] hover:text-[#135e96]">
+        <Link href="/admin/setup" className="text-navy hover:text-brand-red">
           View setup instructions
         </Link>
       </p>

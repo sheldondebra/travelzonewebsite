@@ -51,7 +51,7 @@ export default async function AdminTicketRequestDetailPage({ params }: Props) {
               <DetailRow
                 label="Email"
                 value={
-                  <a href={`mailto:${request.email}`} className="text-[#2271b1]">
+                  <a href={`mailto:${request.email}`} className="text-navy">
                     {request.email}
                   </a>
                 }
@@ -59,7 +59,7 @@ export default async function AdminTicketRequestDetailPage({ params }: Props) {
               <DetailRow
                 label="Phone"
                 value={
-                  <a href={`tel:${request.phone}`} className="text-[#2271b1]">
+                  <a href={`tel:${request.phone}`} className="text-navy">
                     {request.phone}
                   </a>
                 }

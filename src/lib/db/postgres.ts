@@ -31,13 +31,36 @@ function connectionRequiresSsl(databaseUrl: string) {
   }
 }
 
-export function createPostgresClient(databaseUrl: string) {
-  const needsSsl = connectionRequiresSsl(databaseUrl);
+/**
+ * Normalize managed-Postgres URLs for the Node `postgres` client.
+ * Neon often appends `channel_binding=require`, which can hang TLS handshakes
+ * during Next.js static generation.
+ */
+export function normalizeDatabaseUrl(databaseUrl: string) {
+  try {
+    const normalized = databaseUrl.replace(/^postgres(ql)?:/, "https:");
+    const url = new URL(normalized);
+    url.searchParams.delete("channel_binding");
+    if (!url.searchParams.get("sslmode")) {
+      url.searchParams.set("sslmode", "require");
+    }
+    return url.toString().replace(/^https:/, "postgresql:");
+  } catch {
+    return databaseUrl;
+  }
+}
 
-  return postgres(databaseUrl, {
-    max: 1,
-    ssl: needsSsl ? "require" : false,
+export function createPostgresClient(databaseUrl: string) {
+  const connectionUrl = normalizeDatabaseUrl(databaseUrl);
+  const needsSsl = connectionRequiresSsl(connectionUrl);
+
+  return postgres(connectionUrl, {
+    max: 5,
+    idle_timeout: 20,
     connect_timeout: 10,
+    max_lifetime: 60 * 5,
+    prepare: false,
+    ssl: needsSsl ? "require" : false,
   });
 }
 
@@ -54,6 +77,27 @@ export function getSql() {
   }
 
   return sharedClient;
+}
+
+export async function withSqlTimeout<T>(
+  work: (sql: ReturnType<typeof postgres>) => Promise<T>,
+  timeoutMs = 8000,
+): Promise<T> {
+  const sql = getSql();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      work(sql),
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`Database query timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 export async function withSql<T>(fn: (sql: ReturnType<typeof postgres>) => Promise<T>): Promise<T> {

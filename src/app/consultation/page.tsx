@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PageHero } from "@/components/PageHero";
 import { BookConsultationForm } from "@/components/consultation/BookConsultationForm";
+import { DEFAULT_CONSULTATION_AVAILABILITY } from "@/lib/consultation-availability";
 import { createMetadata } from "@/lib/seo";
 import { getConsultationAvailability } from "@/lib/site-settings";
 
@@ -13,8 +14,16 @@ export const metadata: Metadata = createMetadata({
   path: "/consultation",
 });
 
+export const revalidate = 300;
+
 export default async function ConsultationPage() {
-  const availability = await getConsultationAvailability();
+  let availability = DEFAULT_CONSULTATION_AVAILABILITY;
+
+  try {
+    availability = await getConsultationAvailability();
+  } catch {
+    // Keep the booking form usable if settings lookup fails.
+  }
 
   return (
     <>

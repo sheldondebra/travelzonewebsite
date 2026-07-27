@@ -26,9 +26,69 @@ type Props = {
   forbidden?: boolean;
 };
 
+type StatTile = {
+  label: string;
+  value: number;
+  href: string;
+  hint: string;
+  highlight?: boolean;
+};
+
 export function AdminDashboard({ stats, role, email, forbidden }: Props) {
   const local = email.split("@")[0] ?? "there";
   const name = local.charAt(0).toUpperCase() + local.slice(1);
+
+  const priorityStats: StatTile[] = [
+    {
+      label: "Pending bookings",
+      value: stats.pendingBookings,
+      href: "/admin/bookings",
+      hint: "Needs attention",
+      highlight: stats.pendingBookings > 0,
+    },
+    {
+      label: "Ticket requests",
+      value: stats.pendingTicketRequests,
+      href: "/admin/tickets",
+      hint: "Awaiting reply",
+      highlight: stats.pendingTicketRequests > 0,
+    },
+    {
+      label: "Consultations",
+      value: stats.pendingConsultations,
+      href: "/admin/consultations",
+      hint: "Pending",
+      highlight: stats.pendingConsultations > 0,
+    },
+    {
+      label: "Unread messages",
+      value: stats.pendingMessages,
+      href: "/admin/messages",
+      hint: "Inbox",
+      highlight: stats.pendingMessages > 0,
+    },
+  ];
+
+  const secondaryStats: StatTile[] = [
+    {
+      label: "Published tours",
+      value: stats.publishedTours,
+      href: "/admin/tours",
+      hint: "Live on site",
+    },
+    {
+      label: "Published posts",
+      value: stats.publishedPosts,
+      href: "/admin/blog",
+      hint: "Blog",
+    },
+    {
+      label: "Subscribers",
+      value: stats.subscribers,
+      href: "/admin/newsletter",
+      hint: "Newsletter",
+    },
+  ];
 
   return (
     <>
@@ -43,85 +103,44 @@ export function AdminDashboard({ stats, role, email, forbidden }: Props) {
         </AdminNotice>
       ) : null}
 
+      <div className="admin-stat-grid">
+        {[...priorityStats, ...secondaryStats].map((tile) => (
+          <Link
+            key={tile.href + tile.label}
+            href={tile.href}
+            className={`admin-stat-tile ${tile.highlight ? "admin-stat-tile-highlight" : ""}`.trim()}
+          >
+            <span className="admin-stat-tile-label">{tile.label}</span>
+            <span className="admin-stat-tile-value">{tile.value}</span>
+            <span className="admin-stat-tile-hint">{tile.hint}</span>
+          </Link>
+        ))}
+      </div>
+
       <div className="admin-dashboard-columns">
         <div>
-          <AdminWidget title="At a Glance">
-            <ul className="admin-glance-list">
-              <li>
-                <Link href="/admin/tours">
-                  <strong>{stats.publishedTours}</strong> published tour
-                  {stats.publishedTours === 1 ? "" : "s"}
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/blog">
-                  <strong>{stats.publishedPosts}</strong> published post
-                  {stats.publishedPosts === 1 ? "" : "s"}
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/bookings">
-                  <strong>{stats.pendingBookings}</strong> pending booking
-                  {stats.pendingBookings === 1 ? "" : "s"}
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/tickets">
-                  <strong>{stats.pendingTicketRequests}</strong> pending ticket request
-                  {stats.pendingTicketRequests === 1 ? "" : "s"}
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/consultations">
-                  <strong>{stats.pendingConsultations}</strong> pending consultation
-                  {stats.pendingConsultations === 1 ? "" : "s"}
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/messages">
-                  <strong>{stats.pendingMessages}</strong> unread message
-                  {stats.pendingMessages === 1 ? "" : "s"}
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/newsletter">
-                  <strong>{stats.subscribers}</strong> newsletter subscriber
-                  {stats.subscribers === 1 ? "" : "s"}
-                </Link>
-              </li>
-            </ul>
-          </AdminWidget>
-
-          <AdminWidget title="Quick Draft">
-            <p className="mb-3 text-[#646970]">
+          <AdminWidget title="Quick actions">
+            <p className="admin-field-hint mt-0 mb-4">
               Jump straight to common tasks.
             </p>
-            <p className="mb-2">
+            <div className="admin-quick-actions">
               <Link href="/admin/tours/new" className="admin-button-primary">
                 Add new tour
               </Link>
-            </p>
-            <p className="mb-2">
               <Link href="/admin/blog/new" className="admin-button-secondary">
                 Add new post
               </Link>
-            </p>
-            {role === "admin" ? (
-              <p>
+              <Link href="/admin/about/new" className="admin-button-secondary">
+                Add About profile
+              </Link>
+              {role === "admin" ? (
                 <Link href="/admin/users/new" className="admin-button-secondary">
                   Add dashboard user
                 </Link>
-              </p>
-            ) : null}
-            <p>
-              <Link href="/admin/about/new" className="admin-button-secondary">
-                Add About page profile
-              </Link>
-            </p>
+              ) : null}
+            </div>
           </AdminWidget>
-        </div>
 
-        <div>
           <AdminWidget title="Quick Links">
             <ul className="admin-quick-links">
               <li>
@@ -160,20 +179,22 @@ export function AdminDashboard({ stats, role, email, forbidden }: Props) {
               ) : null}
             </ul>
           </AdminWidget>
+        </div>
 
+        <div>
           {role === "admin" ? (
             <AdminWidget title="Dashboard users">
               <p className="admin-field-hint mt-0">
-                <strong className="text-[#1d2327]">{stats.staffUsers}</strong> active staff
+                <strong className="text-navy">{stats.staffUsers}</strong> active staff
                 account{stats.staffUsers === 1 ? "" : "s"} with admin access.
               </p>
-              <div className="mt-4 border-t border-[#f0f0f1] pt-4">
-                <p className="mb-3 text-[13px] font-semibold text-[#1d2327]">
+              <div className="mt-4 border-t border-[#f3efe8] pt-4">
+                <p className="mb-3 text-[13px] font-semibold text-navy">
                   Add dashboard user
                 </p>
                 <StaffUserForm variant="compact" showCancel={false} />
               </div>
-              <p className="mt-4 border-t border-[#f0f0f1] pt-3">
+              <p className="mt-4 border-t border-[#f3efe8] pt-3">
                 <Link href="/admin/users">Manage all users</Link>
               </p>
             </AdminWidget>
@@ -181,14 +202,14 @@ export function AdminDashboard({ stats, role, email, forbidden }: Props) {
 
           <AdminWidget title="About page team">
             <p className="admin-field-hint mt-0">
-              <strong className="text-[#1d2327]">{stats.aboutTeamMembers}</strong> published
+              <strong className="text-navy">{stats.aboutTeamMembers}</strong> published
               profile{stats.aboutTeamMembers === 1 ? "" : "s"} on{" "}
               <Link href="/about" target="_blank">
                 /about
               </Link>
               .
             </p>
-            <p className="mt-4 border-t border-[#f0f0f1] pt-3">
+            <p className="mt-4 border-t border-[#f3efe8] pt-3">
               <Link href="/admin/about">Manage About page team</Link>
             </p>
           </AdminWidget>

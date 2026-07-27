@@ -120,9 +120,11 @@ export async function deleteAboutTeamMemberFormAction(
 }
 
 export async function importDefaultAboutTeamMembersAction(
-  _prev: AboutTeamActionResult | undefined,
-  _formData: FormData,
+  prev: AboutTeamActionResult | undefined,
+  formData: FormData,
 ): Promise<AboutTeamActionResult> {
+  void prev;
+  void formData;
   try {
     await requireStaff();
     const imported = await seedDefaultAboutTeamMembersIfEmpty();

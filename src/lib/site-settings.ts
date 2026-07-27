@@ -1,5 +1,5 @@
 import { isMissingTableError } from "@/lib/db/errors";
-import { getSql } from "@/lib/db/postgres";
+import { getSql, withSqlTimeout } from "@/lib/db/postgres";
 import type {
   AdminSettingsView,
   ConsultationAvailabilitySettings,
@@ -105,13 +105,15 @@ async function loadRawSettingsRow(): Promise<{
   revision: string;
 }> {
   try {
-    const sql = getSql();
-    const rows = await sql`
-      select data, updated_at
-      from public.site_settings
-      where id = 'default'
-      limit 1
-    `;
+    const rows = await withSqlTimeout(
+      (sql) => sql`
+        select data, updated_at
+        from public.site_settings
+        where id = 'default'
+        limit 1
+      `,
+      8000,
+    );
 
     const row = rows[0];
     if (!row?.data || typeof row.data !== "object") {

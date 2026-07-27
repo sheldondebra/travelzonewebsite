@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync } from "fs";
 import { basename, join } from "path";
 import { getDatabaseUrl } from "./db-url";
 import { loadLocalEnv } from "./load-env";

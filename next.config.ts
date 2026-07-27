@@ -34,6 +34,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: import.meta.dirname,
   },
+  staticPageGenerationTimeout: 120,
   async headers() {
     return [
       {

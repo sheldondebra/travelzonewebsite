@@ -42,7 +42,7 @@ export default async function AdminConsultationDetailPage({ params }: Props) {
               <DetailRow
                 label="Email"
                 value={
-                  <a href={`mailto:${booking.email}`} className="text-[#2271b1]">
+                  <a href={`mailto:${booking.email}`} className="text-navy">
                     {booking.email}
                   </a>
                 }
@@ -50,7 +50,7 @@ export default async function AdminConsultationDetailPage({ params }: Props) {
               <DetailRow
                 label="Phone"
                 value={
-                  <a href={`tel:${booking.phone}`} className="text-[#2271b1]">
+                  <a href={`tel:${booking.phone}`} className="text-navy">
                     {booking.phone}
                   </a>
                 }
