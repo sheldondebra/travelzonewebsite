@@ -4,7 +4,7 @@ import { AdminPageHeader } from "@/components/admin/AdminChrome";
 import { AdminSavedQueryToast } from "@/components/admin/AdminSavedQueryToast";
 import { BlogForm } from "@/components/admin/BlogForm";
 import { DeleteBlogButton } from "@/components/admin/DeleteBlogButton";
-import { getAdminBlogPost } from "@/lib/content-admin";
+import { getAdminBlogPost } from "@/lib/content-admin-blog";
 import { requireStaff } from "@/lib/auth/staff";
 
 type Props = {

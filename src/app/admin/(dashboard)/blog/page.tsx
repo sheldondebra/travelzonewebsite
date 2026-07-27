@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/AdminChrome";
 import { BlogList } from "@/components/admin/BlogList";
-import { listAdminBlogPosts } from "@/lib/content-admin";
+import { listAdminBlogPosts } from "@/lib/content-admin-blog";
 import { requireStaff } from "@/lib/auth/staff";
 
 export default async function AdminBlogPage() {

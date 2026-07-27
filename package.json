@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/assert-book-bundle-lean.js && node scripts/assert-admin-bundle-lean.js && next build",
     "start": "next start",
     "lint": "eslint",
     "bootstrap": "tsx scripts/bootstrap.ts",

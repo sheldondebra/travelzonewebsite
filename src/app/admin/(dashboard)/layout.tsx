@@ -1,7 +1,7 @@
 import { AdminLayoutClient } from "@/components/admin/AdminLayoutClient";
 import { AdminSetupBanner } from "@/components/admin/AdminSetupBanner";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
-import { getDashboardStats } from "@/lib/content-admin";
+import { getDashboardStats } from "@/lib/content-admin-stats";
 import { getAdminSettingsView } from "@/lib/site-settings";
 import { requireStaff } from "@/lib/auth/staff";
 

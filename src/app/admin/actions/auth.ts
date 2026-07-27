@@ -32,6 +32,10 @@ export async function loginAction(
     return { error: "Admin is not configured yet." };
   }
 
+  if (!(formData instanceof FormData)) {
+    return { error: "Sign-in failed. Please try again in a moment." };
+  }
+
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
 

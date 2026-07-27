@@ -1,5 +1,5 @@
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
-import { getDashboardStats } from "@/lib/content-admin";
+import { getDashboardStats } from "@/lib/content-admin-stats";
 import { requireStaff } from "@/lib/auth/staff";
 
 export default async function AdminDashboardPage({

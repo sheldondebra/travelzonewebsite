@@ -6,7 +6,7 @@ import {
   deleteBlogPost,
   saveBlogPost,
   updateBlogPostStatus,
-} from "@/lib/content-admin";
+} from "@/lib/content-admin-blog";
 import type { BlogPostInput, ContentStatus } from "@/lib/content-types";
 import { normalizeMediaUrl } from "@/lib/media-url";
 import { sanitizeBlogHtml } from "@/lib/sanitize-html";
