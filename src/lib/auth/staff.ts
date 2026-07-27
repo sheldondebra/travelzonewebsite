@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import {
+  clearSessionCookieOnServer,
   createResetToken,
   createSessionToken,
   getSessionFromServer,
@@ -73,14 +74,21 @@ export async function getStaffUser(): Promise<StaffUser | null> {
 
   try {
     const user = await findUserById(session.sub);
-    if (!user || !user.is_active) return null;
-    if (user.role !== "admin" && user.role !== "editor") return null;
+    if (!user || !user.is_active) {
+      await clearSessionCookieOnServer();
+      return null;
+    }
+    if (user.role !== "admin" && user.role !== "editor") {
+      await clearSessionCookieOnServer();
+      return null;
+    }
 
     return {
       user: { id: user.id, email: user.email },
       role: user.role,
     };
   } catch {
+    await clearSessionCookieOnServer();
     return null;
   }
 }
@@ -88,7 +96,10 @@ export async function getStaffUser(): Promise<StaffUser | null> {
 export async function requireStaff() {
   if (!isDatabaseConfigured()) redirect("/admin/setup");
   const staff = await getStaffUser();
-  if (!staff) redirect("/admin/login");
+  if (!staff) {
+    await clearSessionCookieOnServer();
+    redirect("/admin/login");
+  }
   return staff;
 }
 

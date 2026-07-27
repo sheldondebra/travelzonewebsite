@@ -16,21 +16,21 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  const session = await getSessionFromRequest(request);
+  // Public auth pages — do not bounce based on JWT alone (cookie may be stale).
+  if (isLogin || isSetup || isResetPassword) {
+    return NextResponse.next({ request });
+  }
 
-  if (isAdminRoute && !isLogin && !isSetup && !isResetPassword) {
+  if (isAdminRoute) {
+    const session = await getSessionFromRequest(request);
     if (!session) {
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }
-  }
-
-  if ((isLogin || isSetup) && session) {
-    return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   return NextResponse.next({ request });
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin", "/admin/:path*"],
 };

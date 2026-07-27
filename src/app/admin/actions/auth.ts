@@ -46,7 +46,7 @@ export async function loginAction(
   }
 
   await createStaffSession(staff);
-  return { success: true };
+  redirect("/admin");
 }
 
 export type PasswordResetActionState = { error?: string; success?: string };

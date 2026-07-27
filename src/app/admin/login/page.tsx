@@ -2,6 +2,7 @@ import { Logo } from "@/components/Logo";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/admin/LoginForm";
+import { getStaffUser } from "@/lib/auth/staff";
 import { isDatabaseConfigured } from "@/lib/db/config";
 
 type Props = {
@@ -11,6 +12,12 @@ type Props = {
 export default async function AdminLoginPage({ searchParams }: Props) {
   if (!isDatabaseConfigured()) {
     redirect("/admin/setup");
+  }
+
+  // Only redirect when the session maps to a real active staff user.
+  const staff = await getStaffUser();
+  if (staff) {
+    redirect("/admin");
   }
 
   const params = await searchParams;

@@ -9,7 +9,24 @@ export default async function AdminDashboardPage({
 }) {
   const { user, role } = await requireStaff();
   const { error } = await searchParams;
-  const stats = await getDashboardStats();
+
+  let stats = {
+    publishedTours: 0,
+    publishedPosts: 0,
+    pendingBookings: 0,
+    pendingTicketRequests: 0,
+    pendingConsultations: 0,
+    pendingMessages: 0,
+    subscribers: 0,
+    staffUsers: 0,
+    aboutTeamMembers: 0,
+  };
+
+  try {
+    stats = await getDashboardStats();
+  } catch {
+    // Keep the dashboard reachable even if a stats query fails.
+  }
 
   return (
     <AdminDashboard
