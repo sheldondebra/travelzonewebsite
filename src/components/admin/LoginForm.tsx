@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   loginAction,
   requestPasswordResetAction,
@@ -12,7 +11,6 @@ import { PasswordInput } from "@/components/admin/PasswordInput";
 type Mode = "login" | "forgot";
 
 export function LoginForm({ resetSuccess }: { resetSuccess?: boolean }) {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
   const [loginState, loginActionBound, loginPending] = useActionState<
     LoginActionState | undefined,
@@ -25,9 +23,10 @@ export function LoginForm({ resetSuccess }: { resetSuccess?: boolean }) {
 
   useEffect(() => {
     if (!loginState?.success) return;
-    router.replace("/admin");
-    router.refresh();
-  }, [loginState, router]);
+    // Full document navigation so the new session cookie is always sent.
+    // Soft client transitions can land on a stale/error shell after sign-in.
+    window.location.assign("/admin");
+  }, [loginState]);
 
   if (mode === "forgot") {
     return (
