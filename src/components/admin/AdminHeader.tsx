@@ -29,7 +29,7 @@ type Props = {
   splitsmsReady: boolean;
   smsBalance: SplitSmsBalance | null;
   smsBalanceError: string | null;
-  notifications: AdminHeaderNotifications;
+  notifications?: AdminHeaderNotifications;
   menuOpen?: boolean;
   onMenuToggle?: () => void;
 };
@@ -67,7 +67,12 @@ export function AdminHeader({
   splitsmsReady,
   smsBalance,
   smsBalanceError,
-  notifications,
+  notifications = {
+    pendingBookings: 0,
+    pendingTicketRequests: 0,
+    pendingConsultations: 0,
+    pendingMessages: 0,
+  },
   menuOpen = false,
   onMenuToggle,
 }: Props) {

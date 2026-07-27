@@ -2,22 +2,30 @@ import Link from "next/link";
 import { AdminNotice } from "@/components/admin/AdminChrome";
 import { isDatabaseConfigured } from "@/lib/db/config";
 import { isMissingTableError } from "@/lib/db/errors";
-import { getSql } from "@/lib/db/postgres";
+import { withSqlTimeout } from "@/lib/db/postgres";
 
 export async function isDatabaseSetupNeeded() {
   if (!isDatabaseConfigured()) return true;
 
   try {
-    await getSql()`select id from public.tours limit 1`;
+    await withSqlTimeout(
+      (sql) => sql`select id from public.tours limit 1`,
+      5000,
+    );
     return false;
   } catch (error) {
+    // Missing tables → show setup banner. Timeouts/connection blips → don't block admin.
     return isMissingTableError(error);
   }
 }
 
 export async function AdminSetupBanner() {
-  const needed = await isDatabaseSetupNeeded();
-  if (!needed) return null;
+  try {
+    const needed = await isDatabaseSetupNeeded();
+    if (!needed) return null;
+  } catch {
+    return null;
+  }
 
   return (
     <AdminNotice variant="warning">

@@ -134,6 +134,7 @@ export async function getSplitSmsBalance(): Promise<SplitSmsBalanceResult> {
     const response = await fetch(`${config.baseUrl}/api/v1/balance`, {
       headers: { Authorization: `Bearer ${config.apiKey}` },
       cache: "no-store",
+      signal: AbortSignal.timeout(5000),
     });
 
     const data = (await response.json()) as SplitSmsBalanceResponse;

@@ -16,7 +16,7 @@ export const staticTours: Tour[] = [
       "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=1200&q=80",
     gallery: [
       "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80",
-      "https://images.unsplash.com/photo-1582672060016-769a9fb3a48b?w=800&q=80",
+      "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=800&q=80",
       "https://images.unsplash.com/photo-1518684079-3c830dcef090?w=800&q=80",
     ],
     description:

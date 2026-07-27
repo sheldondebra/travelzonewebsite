@@ -1,5 +1,7 @@
 const BROKEN_UNSPLASH_IDS: Record<string, string> = {
   "photo-1523800503107-5bc3ce2a3a7d": "photo-1542744173-8e7e53415bb0",
+  // Removed from Unsplash — Dubai gallery photo 2
+  "photo-1582672060016-769a9fb3a48b": "photo-1489515217757-5fd1be406fef",
 };
 
 export const DEFAULT_BLOG_IMAGE =

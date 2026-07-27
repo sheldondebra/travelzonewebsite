@@ -1,5 +1,5 @@
-import { getPublishedBlogPosts } from "@/lib/content-public";
-import { getPublishedTours } from "@/lib/content-public";
+import { getPublishedBlogPosts } from "@/lib/content-public-blog";
+import { getPublishedTours } from "@/lib/content-public-tours";
 import { isDatabaseConfigured } from "@/lib/db/config";
 import { getSql } from "@/lib/db/postgres";
 import { absoluteUrl } from "@/lib/seo";

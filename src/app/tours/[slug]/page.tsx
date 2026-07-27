@@ -13,7 +13,7 @@ import {
   TourDetailInclusions,
   TourDetailOverview,
 } from "@/components/tours/TourDetailSections";
-import { getPublishedTours, getTourBySlug } from "@/lib/content-public";
+import { getPublishedTours, getTourBySlug } from "@/lib/content-public-tours";
 import { isPaystackConfiguredAsync } from "@/lib/payment-config";
 import { createMetadata } from "@/lib/seo";
 import { breadcrumbJsonLd, tourJsonLd } from "@/lib/structured-data";

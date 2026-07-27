@@ -6,7 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { JsonLd } from "@/components/JsonLd";
 import { BlogPostCta } from "@/components/BlogPostCta";
-import { getBlogPostBySlug, getPublishedBlogPosts } from "@/lib/content-public";
+import { getBlogPostBySlug, getPublishedBlogPosts } from "@/lib/content-public-blog";
 import { parseDisplayDateToIso } from "@/lib/date-utils";
 import { getNextImageSrc } from "@/lib/media-url";
 import { createMetadata } from "@/lib/seo";

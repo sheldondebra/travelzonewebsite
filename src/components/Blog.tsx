@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getPublishedBlogPosts } from "@/lib/content-public";
+import { getPublishedBlogPosts } from "@/lib/content-public-blog";
 import { getNextImageSrc } from "@/lib/media-url";
 
 export async function Blog() {

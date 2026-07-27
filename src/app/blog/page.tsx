@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PageHero } from "@/components/PageHero";
 import { BlogIndex } from "@/components/BlogIndex";
-import { getPublishedBlogPosts } from "@/lib/content-public";
+import { getPublishedBlogPosts } from "@/lib/content-public-blog";
 import { createMetadata } from "@/lib/seo";
 
 export const revalidate = 3600;

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { TourCard } from "@/components/tours/TourCard";
-import { getPublishedTours } from "@/lib/content-public";
+import { getPublishedTours } from "@/lib/content-public-tours";
 
 export async function PopularTours() {
   const tours = await getPublishedTours();

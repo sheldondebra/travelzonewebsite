@@ -11,6 +11,10 @@ export async function openPaystackCheckout({
   authorizationUrl,
   reference,
 }: OpenPaystackOptions): Promise<void> {
+  if (typeof window === "undefined") {
+    throw new Error("Paystack checkout can only run in the browser.");
+  }
+
   const PaystackPop = (await import("@paystack/inline-js")).default;
   const paystack = new PaystackPop();
 

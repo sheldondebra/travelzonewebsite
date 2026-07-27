@@ -1,4 +1,4 @@
-import { htmlToParagraphs } from "@/lib/content-public";
+import { htmlToParagraphs } from "@/lib/content-public-html";
 import type {
   AdminBlogPost,
   AdminTour,
@@ -7,7 +7,7 @@ import type {
   TourInput,
 } from "@/lib/content-types";
 import { databaseSetupError, isMissingTableError } from "@/lib/db/errors";
-import { getSql } from "@/lib/db/postgres";
+import { getSql, withSqlTimeout } from "@/lib/db/postgres";
 import { normalizeMediaUrl, normalizeMediaUrls } from "@/lib/media-url";
 import { sanitizeBlogHtml } from "@/lib/sanitize-html";
 import type { Tour } from "@/lib/tours";
@@ -310,23 +310,30 @@ async function countTable(
   table: string,
   filter?: { column: string; value: string | number | boolean },
 ) {
-  const sql = getSql();
   try {
     if (filter) {
-      const rows = await sql.unsafe<{ count: string }[]>(
-        `select count(*)::text as count from public.${table} where ${filter.column} = $1`,
-        [filter.value],
+      const rows = await withSqlTimeout(
+        (sql) =>
+          sql.unsafe<{ count: string }[]>(
+            `select count(*)::text as count from public.${table} where ${filter.column} = $1`,
+            [filter.value],
+          ),
+        5000,
       );
       return Number(rows[0]?.count ?? 0);
     }
 
-    const rows = await sql.unsafe<{ count: string }[]>(
-      `select count(*)::text as count from public.${table}`,
+    const rows = await withSqlTimeout(
+      (sql) =>
+        sql.unsafe<{ count: string }[]>(
+          `select count(*)::text as count from public.${table}`,
+        ),
+      5000,
     );
     return Number(rows[0]?.count ?? 0);
   } catch (error) {
     if (isMissingTableError(error)) return 0;
-    throw error;
+    return 0;
   }
 }
 

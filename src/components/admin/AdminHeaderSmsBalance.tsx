@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { HiArrowPath, HiChatBubbleBottomCenterText } from "react-icons/hi2";
 import {
   refreshSplitSmsBalanceAction,
@@ -42,10 +42,6 @@ export function AdminHeaderSmsBalance({
   const [error, setError] = useState(initialError);
   const [pending, startTransition] = useTransition();
 
-  if (!splitsmsReady) {
-    return null;
-  }
-
   function refresh() {
     startTransition(async () => {
       const result: SplitSmsBalanceActionResult = await refreshSplitSmsBalanceAction();
@@ -56,6 +52,17 @@ export function AdminHeaderSmsBalance({
       }
       setError(result.error);
     });
+  }
+
+  useEffect(() => {
+    if (!splitsmsReady || balance) return;
+    refresh();
+    // Load once when SMS is configured and we have no server-provided balance.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount/ready fetch
+  }, [splitsmsReady]);
+
+  if (!splitsmsReady) {
+    return null;
   }
 
   return (

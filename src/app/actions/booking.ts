@@ -11,7 +11,7 @@ import {
   ghsToPesewas,
   initializePaystackTransaction,
 } from "@/lib/paystack";
-import { getTourBySlug } from "@/lib/content-public";
+import { getTourBySlug } from "@/lib/content-public-tours";
 import { getTourPaymentTotalGhsAsync } from "@/lib/tours";
 import { isPaystackConfiguredAsync } from "@/lib/payment-config";
 import { rateLimitFromHeaders } from "@/lib/rate-limit";
