@@ -7,9 +7,15 @@ export async function withQueryTimeout<T>(
 ): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
 
+  // Swallow late rejections so a timed-out DB call cannot crash the request.
+  const guarded = promise.then(
+    (value) => value,
+    () => fallback,
+  );
+
   try {
     return await Promise.race([
-      promise,
+      guarded,
       new Promise<T>((resolve) => {
         timer = setTimeout(() => resolve(fallback), timeoutMs);
       }),

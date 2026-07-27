@@ -25,11 +25,24 @@ type Props = {
 
 export default async function BookPage({ searchParams }: Props) {
   const { tour: tourSlug } = await searchParams;
-  const tours = await getPublishedTours();
-  const initialSlug =
-    tourSlug && (await getTourBySlug(tourSlug)) ? tourSlug : undefined;
 
-  const paymentsReady = await isPaystackConfiguredAsync();
+  let tours: Awaited<ReturnType<typeof getPublishedTours>> = [];
+  let initialSlug: string | undefined;
+  let paymentsReady = false;
+
+  try {
+    tours = await getPublishedTours();
+    initialSlug =
+      tourSlug && (await getTourBySlug(tourSlug)) ? tourSlug : undefined;
+  } catch {
+    tours = [];
+  }
+
+  try {
+    paymentsReady = await isPaystackConfiguredAsync();
+  } catch {
+    paymentsReady = false;
+  }
 
   return (
     <>

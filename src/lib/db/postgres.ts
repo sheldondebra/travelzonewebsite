@@ -12,15 +12,32 @@ function getDatabaseHostname(databaseUrl: string) {
   }
 }
 
-export function createPostgresClient(databaseUrl: string) {
+function connectionRequiresSsl(databaseUrl: string) {
   const hostname = getDatabaseHostname(databaseUrl);
-  const needsSsl =
-    hostname.endsWith(".supabase.co") || hostname.includes("pooler.supabase.com");
+  if (
+    hostname.endsWith(".supabase.co") ||
+    hostname.includes("pooler.supabase.com") ||
+    hostname.endsWith(".neon.tech")
+  ) {
+    return true;
+  }
+
+  try {
+    const normalized = databaseUrl.replace(/^postgres(ql)?:/, "https:");
+    const sslMode = new URL(normalized).searchParams.get("sslmode")?.toLowerCase();
+    return sslMode === "require" || sslMode === "verify-ca" || sslMode === "verify-full";
+  } catch {
+    return false;
+  }
+}
+
+export function createPostgresClient(databaseUrl: string) {
+  const needsSsl = connectionRequiresSsl(databaseUrl);
 
   return postgres(databaseUrl, {
     max: 1,
     ssl: needsSsl ? "require" : false,
-    connect_timeout: 15,
+    connect_timeout: 10,
   });
 }
 
