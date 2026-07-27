@@ -10,7 +10,7 @@ import {
 } from "@/lib/auth/session";
 import type { StaffRole, StaffUser } from "@/lib/auth/types";
 import { isDatabaseConfigured } from "@/lib/db/config";
-import { getSql } from "@/lib/db/postgres";
+import { getSql, withSqlTimeout } from "@/lib/db/postgres";
 
 type DbUserRow = {
   id: string;
@@ -23,25 +23,33 @@ type DbUserRow = {
 
 export type { StaffRole, StaffUser };
 
+const AUTH_QUERY_TIMEOUT_MS = 8000;
+
 export async function findUserByEmail(email: string) {
-  const sql = getSql();
-  const rows = await sql<DbUserRow[]>`
-    select id, email, password_hash, role, display_name, is_active
-    from public.users
-    where lower(email) = lower(${email})
-    limit 1
-  `;
+  const rows = await withSqlTimeout(
+    (sql) =>
+      sql<DbUserRow[]>`
+        select id, email, password_hash, role, display_name, is_active
+        from public.users
+        where lower(email) = lower(${email})
+        limit 1
+      `,
+    AUTH_QUERY_TIMEOUT_MS,
+  );
   return rows[0] ?? null;
 }
 
 export async function findUserById(id: string) {
-  const sql = getSql();
-  const rows = await sql<DbUserRow[]>`
-    select id, email, password_hash, role, display_name, is_active
-    from public.users
-    where id = ${id}::uuid
-    limit 1
-  `;
+  const rows = await withSqlTimeout(
+    (sql) =>
+      sql<DbUserRow[]>`
+        select id, email, password_hash, role, display_name, is_active
+        from public.users
+        where id = ${id}::uuid
+        limit 1
+      `,
+    AUTH_QUERY_TIMEOUT_MS,
+  );
   return rows[0] ?? null;
 }
 
@@ -88,8 +96,11 @@ export async function getStaffUser(): Promise<StaffUser | null> {
       role: user.role,
     };
   } catch {
-    await clearSessionCookieOnServer();
-    return null;
+    // Keep the signed session on transient DB/timeouts so login isn't undone.
+    return {
+      user: { id: session.sub, email: session.email },
+      role: session.role,
+    };
   }
 }
 

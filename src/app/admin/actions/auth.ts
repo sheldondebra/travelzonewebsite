@@ -35,18 +35,30 @@ export async function loginAction(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
 
-  const limit = await rateLimitFromHeaders("admin-login", 8, 15 * 60 * 1000, email);
-  if (!limit.allowed) {
-    return { error: "Too many login attempts. Please wait a few minutes and try again." };
+  if (!email || !password) {
+    return { error: "Enter your email and password." };
   }
 
-  const staff = await authenticateStaff(email, password);
-  if (!staff) {
-    return { error: "Invalid email or password." };
-  }
+  try {
+    const limit = await rateLimitFromHeaders("admin-login", 8, 15 * 60 * 1000, email);
+    if (!limit.allowed) {
+      return {
+        error: "Too many login attempts. Please wait a few minutes and try again.",
+      };
+    }
 
-  await createStaffSession(staff);
-  redirect("/admin");
+    const staff = await authenticateStaff(email, password);
+    if (!staff) {
+      return { error: "Invalid email or password." };
+    }
+
+    await createStaffSession(staff);
+    return { success: true };
+  } catch {
+    return {
+      error: "Sign-in failed. Please try again in a moment.",
+    };
+  }
 }
 
 export type PasswordResetActionState = { error?: string; success?: string };

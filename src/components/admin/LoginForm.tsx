@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   loginAction,
   requestPasswordResetAction,
@@ -11,6 +12,7 @@ import { PasswordInput } from "@/components/admin/PasswordInput";
 type Mode = "login" | "forgot";
 
 export function LoginForm({ resetSuccess }: { resetSuccess?: boolean }) {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
   const [loginState, loginActionBound, loginPending] = useActionState<
     LoginActionState | undefined,
@@ -20,6 +22,12 @@ export function LoginForm({ resetSuccess }: { resetSuccess?: boolean }) {
     requestPasswordResetAction,
     undefined,
   );
+
+  useEffect(() => {
+    if (!loginState?.success) return;
+    router.replace("/admin");
+    router.refresh();
+  }, [loginState, router]);
 
   if (mode === "forgot") {
     return (
@@ -98,6 +106,12 @@ export function LoginForm({ resetSuccess }: { resetSuccess?: boolean }) {
           </p>
         ) : null}
 
+        {loginState?.success ? (
+          <p className="admin-login-success" role="status">
+            Signed in. Opening the dashboard…
+          </p>
+        ) : null}
+
         {loginState?.error ? (
           <p className="admin-login-error" role="alert">
             <strong>Error:</strong> {loginState.error}
@@ -141,8 +155,16 @@ export function LoginForm({ resetSuccess }: { resetSuccess?: boolean }) {
           />
         </div>
 
-        <button type="submit" disabled={loginPending} className="admin-login-submit">
-          {loginPending ? "Signing in…" : "Log in"}
+        <button
+          type="submit"
+          disabled={loginPending || Boolean(loginState?.success)}
+          className="admin-login-submit"
+        >
+          {loginState?.success
+            ? "Opening…"
+            : loginPending
+              ? "Signing in…"
+              : "Log in"}
         </button>
       </form>
     </div>

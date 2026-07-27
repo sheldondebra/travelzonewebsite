@@ -86,9 +86,13 @@ export async function withSqlTimeout<T>(
   const sql = getSql();
   let timer: ReturnType<typeof setTimeout> | undefined;
 
+  const pending = work(sql);
+  // Prevent unhandled rejection if the query settles after a timeout win.
+  void pending.catch(() => undefined);
+
   try {
     return await Promise.race([
-      work(sql),
+      pending,
       new Promise<T>((_, reject) => {
         timer = setTimeout(() => {
           reject(new Error(`Database query timed out after ${timeoutMs}ms`));
