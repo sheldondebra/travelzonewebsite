@@ -237,7 +237,7 @@ export async function saveFtpSettingsAction(
         username: String(formData.get("username") ?? ""),
         password: String(formData.get("password") ?? ""),
         secure: checkbox(formData.get("secure")),
-        remoteFolder: String(formData.get("remoteFolder") ?? "public_html/media"),
+        remoteFolder: String(formData.get("remoteFolder") ?? "media"),
         publicBaseUrl: String(formData.get("publicBaseUrl") ?? ""),
       },
       user.id,

@@ -19,7 +19,7 @@ Let admins connect a cPanel FTP/FTPS account in Settings, test the connection (c
 New **Media** tab:
 
 - Status: Connected / Not connected / Error
-- Fields: enabled, host, port (21), username, password (masked), FTPS toggle, remote folder (`public_html/media`), public base URL
+- Fields: enabled, host, port (21), username, password (masked), FTPS toggle, remote folder (`media`, relative to FTP home), public base URL
 - Actions: Save, Test connection, Disconnect
 - Test success creates remote folder if missing and confirms listing
 

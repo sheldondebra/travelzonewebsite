@@ -55,6 +55,20 @@ function normalizeAbsoluteUrl(url: string) {
     const parsed = new URL(url);
     const host = parsed.hostname.toLowerCase();
 
+    // Same-site /media URLs must go through the Vercel FTP proxy as relative paths.
+    // Absolute https://www.travelzonegh.org/media/... 404s on Vercel without the proxy
+    // (and next/image would try to fetch the dead absolute URL).
+    if (
+      parsed.pathname.startsWith("/media/") &&
+      (host === "localhost" ||
+        host === "127.0.0.1" ||
+        host === "travelzonegh.org" ||
+        host === "www.travelzonegh.org" ||
+        host.endsWith(".vercel.app"))
+    ) {
+      return parsed.pathname;
+    }
+
     if (host === "localhost" || host === "127.0.0.1") {
       const storagePath = extractLegacyStoragePath(parsed.pathname);
       if (storagePath) {

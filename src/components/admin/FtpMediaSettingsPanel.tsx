@@ -139,7 +139,7 @@ export function FtpMediaSettingsPanel({
               <span className="text-[11px] font-semibold uppercase tracking-wide">Folder</span>
             </div>
             <p className="mt-1 truncate text-[13px] font-medium text-[#1d2327]">
-              {ftp.remoteFolder || "public_html/media"}
+              {ftp.remoteFolder || "media"}
             </p>
           </div>
           <div className="rounded-xl border border-[#dcdcde] bg-white px-3 py-3">
@@ -240,12 +240,15 @@ export function FtpMediaSettingsPanel({
               id="ftp-remote-folder"
               name="remoteFolder"
               type="text"
-              defaultValue={ftp.remoteFolder || "public_html/media"}
-              placeholder="public_html/media"
+              defaultValue={ftp.remoteFolder || "media"}
+              placeholder="media"
               className="admin-input"
             />
             <p className="admin-field-hint">
-              Folder on the server. Test connection will create it if missing.
+              Path relative to your FTP home. Most cPanel accounts already start in
+              public_html — use <code className="rounded bg-[#f3efe8] px-1">media</code>,
+              not <code className="rounded bg-[#f3efe8] px-1">public_html/media</code>.
+              Test connection creates the folder if missing.
             </p>
           </div>
 
@@ -269,7 +272,9 @@ export function FtpMediaSettingsPanel({
               />
             </div>
             <p className="admin-field-hint">
-              How browsers load the files (must map to that remote folder).
+              Use your site URL ending in /media (e.g. https://www.travelzonegh.org/media).
+              Files stay on cPanel via FTP; the Next.js site serves them at /media/… so
+              previews work on Vercel.
             </p>
           </div>
 

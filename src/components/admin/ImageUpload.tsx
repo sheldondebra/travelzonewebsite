@@ -12,10 +12,25 @@ type Props = {
   onChange: (url: string) => void;
 };
 
+/** Prefer same-origin /media paths so next/image hits the FTP proxy route. */
+function previewSrc(value: string) {
+  if (!value) return value;
+  if (value.startsWith("/")) return value;
+  try {
+    const parsed = new URL(value);
+    if (parsed.pathname.startsWith("/media/")) return parsed.pathname;
+  } catch {
+    // keep original
+  }
+  return value;
+}
+
 export function ImageUpload({ label, value, folder, onChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const { success, error, setBusy } = useAdminToast();
+  const src = previewSrc(value);
+  const isLocalOrMedia = src.startsWith("/") || src.includes("/media/");
 
   function handleUpload(file: File) {
     const formData = new FormData();
@@ -42,9 +57,16 @@ export function ImageUpload({ label, value, folder, onChange }: Props) {
     <div>
       <label className="admin-label">{label}</label>
       <div className="flex flex-wrap items-start gap-4">
-        {value ? (
-          <div className="relative h-24 w-36 overflow-hidden rounded-[10px] border border-[#e0d9ce]">
-            <Image src={value} alt="" fill className="object-cover" sizes="144px" />
+        {src ? (
+          <div className="relative h-24 w-36 overflow-hidden rounded-[10px] border border-[#e0d9ce] bg-[#f7f4ef]">
+            <Image
+              src={src}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="144px"
+              unoptimized={isLocalOrMedia}
+            />
           </div>
         ) : null}
         <div className="space-y-2">
@@ -66,13 +88,6 @@ export function ImageUpload({ label, value, folder, onChange }: Props) {
           >
             {pending ? "Uploading…" : value ? "Replace image" : "Upload image"}
           </button>
-          <input
-            type="url"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="Or paste image URL"
-            className="admin-input"
-          />
         </div>
       </div>
     </div>
