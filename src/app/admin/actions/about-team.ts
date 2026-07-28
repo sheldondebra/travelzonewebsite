@@ -46,28 +46,36 @@ export async function saveAboutTeamMemberAction(
   _prev: AboutTeamActionResult | undefined,
   formData: FormData,
 ): Promise<AboutTeamActionResult> {
+  let savedId: string | undefined;
+  let isCreate = false;
+
   try {
     await requireStaff();
     const parsed = parseMemberForm(formData);
     if ("error" in parsed) return { success: false, error: parsed.error! };
 
     const id = String(formData.get("id") ?? "").trim() || undefined;
-    const savedId = await saveAboutTeamMember(parsed.input, { id });
+    isCreate = !id;
+    savedId = await saveAboutTeamMember(parsed.input, { id });
     revalidatePath("/admin/about");
     revalidatePath("/about");
     if (id) {
       revalidatePath(`/admin/about/${id}/edit`);
       return { success: true, message: "Team member updated." };
     }
-
-    redirect(`/admin/about/${savedId}/edit?saved=1`);
   } catch (error) {
-    if (error instanceof Error && error.message === "NEXT_REDIRECT") throw error;
     return {
       success: false,
       error: error instanceof Error ? error.message : "Could not save team member.",
     };
   }
+
+  // redirect() throws NEXT_REDIRECT — must stay outside try/catch
+  if (isCreate && savedId) {
+    redirect(`/admin/about/${savedId}/edit?saved=1`);
+  }
+
+  return { success: true, message: "Team member updated." };
 }
 
 export async function updateAboutTeamMemberStatusAction(

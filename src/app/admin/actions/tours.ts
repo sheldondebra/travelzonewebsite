@@ -54,22 +54,25 @@ export async function saveTourAction(
     return { success: false as const, error: "Title and slug are required." };
   }
 
+  let savedId: string;
   try {
-    const savedId = await saveTour(tour, {
+    savedId = await saveTour(tour, {
       id,
       authorId: user.id,
     });
-    revalidatePath("/");
-    revalidatePath("/tours");
-    revalidatePath(`/tours/${tour.slug}`);
-    revalidatePath("/admin/tours");
-    redirect(`/admin/tours/${savedId}/edit?saved=1`);
   } catch (error) {
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Could not save tour.",
     };
   }
+
+  // redirect() throws NEXT_REDIRECT — must stay outside try/catch
+  revalidatePath("/");
+  revalidatePath("/tours");
+  revalidatePath(`/tours/${tour.slug}`);
+  revalidatePath("/admin/tours");
+  redirect(`/admin/tours/${savedId}/edit?saved=1`);
 }
 
 export async function updateTourStatusAction(

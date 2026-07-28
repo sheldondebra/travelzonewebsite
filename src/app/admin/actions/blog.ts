@@ -50,22 +50,25 @@ export async function saveBlogPostAction(
     return { success: false as const, error: "Title and slug are required." };
   }
 
+  let savedId: string;
   try {
-    const savedId = await saveBlogPost(post, {
+    savedId = await saveBlogPost(post, {
       id,
       authorId: user.id,
     });
-    revalidatePath("/");
-    revalidatePath("/blog");
-    revalidatePath(`/blog/${post.slug}`);
-    revalidatePath("/admin/blog");
-    redirect(`/admin/blog/${savedId}/edit?saved=1`);
   } catch (error) {
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Could not save post.",
     };
   }
+
+  // redirect() throws NEXT_REDIRECT — must stay outside try/catch
+  revalidatePath("/");
+  revalidatePath("/blog");
+  revalidatePath(`/blog/${post.slug}`);
+  revalidatePath("/admin/blog");
+  redirect(`/admin/blog/${savedId}/edit?saved=1`);
 }
 
 export async function updateBlogPostStatusAction(
