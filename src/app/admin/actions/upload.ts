@@ -41,11 +41,11 @@ async function uploadOne(file: File, folder: string): Promise<UploadResult> {
   }
 
   const raw = Buffer.from(await file.arrayBuffer());
-  const { buffer, ext } = await compressImage(raw);
+  const { buffer, ext, contentType } = await compressImage(raw);
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
   try {
-    const url = await saveMediaFile(folder, filename, buffer);
+    const url = await saveMediaFile(folder, filename, buffer, contentType);
     return { success: true, url };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Upload failed.";

@@ -9,10 +9,18 @@ export const DEFAULT_BLOG_IMAGE =
 
 const NEXT_IMAGE_HOSTS = new Set(["images.unsplash.com"]);
 
+function isVercelBlobHost(hostname: string) {
+  return (
+    hostname === "blob.vercel-storage.com" ||
+    hostname.endsWith(".blob.vercel-storage.com") ||
+    hostname.endsWith(".public.blob.vercel-storage.com")
+  );
+}
+
 function isAllowedRemoteImageUrl(url: string) {
   try {
     const parsed = new URL(url);
-    return NEXT_IMAGE_HOSTS.has(parsed.hostname);
+    return NEXT_IMAGE_HOSTS.has(parsed.hostname) || isVercelBlobHost(parsed.hostname);
   } catch {
     return false;
   }
