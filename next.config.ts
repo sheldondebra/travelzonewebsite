@@ -19,7 +19,7 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.paystack.co",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://images.unsplash.com https://*.public.blob.vercel-storage.com https://*.blob.vercel-storage.com",
+      "img-src 'self' data: blob: https: http:",
       "font-src 'self' data:",
       "connect-src 'self' https://api.paystack.co https://*.blob.vercel-storage.com",
       "frame-src https://js.paystack.co https://www.google.com https://maps.google.com",
@@ -57,6 +57,14 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.blob.vercel-storage.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.travelzonegh.org",
+      },
+      {
+        protocol: "https",
+        hostname: "travelzonegh.org",
       },
     ],
   },

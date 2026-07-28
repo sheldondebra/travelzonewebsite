@@ -61,6 +61,21 @@ export type NotificationSettings = {
   emailCustomerOnContactMessage: boolean;
 };
 
+export type FtpSettings = {
+  enabled: boolean;
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  /** Explicit FTPS (AUTH TLS). Recommended for cPanel. */
+  secure: boolean;
+  remoteFolder: string;
+  publicBaseUrl: string;
+  lastTestAt: string;
+  lastTestOk: boolean;
+  lastTestMessage: string;
+};
+
 export type SiteSettings = {
   paystack: PaystackSettings;
   splitsms: SplitSmsSettings;
@@ -68,6 +83,7 @@ export type SiteSettings = {
   resend: ResendSettings;
   notifications: NotificationSettings;
   consultationAvailability: ConsultationAvailabilitySettings;
+  ftp: FtpSettings;
 };
 
 export type AdminSettingsView = {
@@ -76,12 +92,14 @@ export type AdminSettingsView = {
   smtp: SmtpSettings & { hasPassword: boolean };
   resend: ResendSettings & { hasApiKey: boolean };
   notifications: NotificationSettings;
+  ftp: Omit<FtpSettings, "password"> & { hasPassword: boolean };
   status: {
     paystackReady: boolean;
     splitsmsReady: boolean;
     smtpReady: boolean;
     resendReady: boolean;
     emailReady: boolean;
+    ftpReady: boolean;
   };
   revision: string;
 };

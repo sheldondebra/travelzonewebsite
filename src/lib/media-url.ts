@@ -86,11 +86,20 @@ export function normalizeMediaUrl(image: string | null | undefined, fallback?: s
 
   if (resolved.startsWith("http://") || resolved.startsWith("https://")) {
     resolved = normalizeAbsoluteUrl(resolved);
-    if (!resolved || !isAllowedRemoteImageUrl(resolved)) {
-      if (resolved.startsWith("/")) return resolved;
+    if (!resolved) return defaultFallback;
+    if (isAllowedRemoteImageUrl(resolved) || resolved.startsWith("/")) {
+      return resolved.startsWith("/") ? resolved : resolved;
+    }
+    // Allow HTTPS media URLs from configured FTP public hosts.
+    try {
+      const parsed = new URL(resolved);
+      if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+        return resolved;
+      }
+    } catch {
       return defaultFallback;
     }
-    return resolved;
+    return defaultFallback;
   }
 
   if (resolved.startsWith("//")) {

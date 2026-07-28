@@ -13,11 +13,12 @@ import {
 } from "@/app/admin/actions/settings";
 import { AdminNotice, AdminWidget } from "@/components/admin/AdminChrome";
 import { useAdminActionFeedback } from "@/components/admin/AdminToastProvider";
+import { FtpMediaSettingsPanel } from "@/components/admin/FtpMediaSettingsPanel";
 import { SplitSmsBalancePanel } from "@/components/admin/SplitSmsBalancePanel";
 import type { AdminSettingsView } from "@/lib/settings-types";
 import type { SplitSmsBalance } from "@/lib/splitsms";
 
-type Tab = "paystack" | "splitsms" | "smtp" | "notifications";
+type Tab = "paystack" | "splitsms" | "smtp" | "media" | "notifications";
 
 type Props = {
   settings: AdminSettingsView;
@@ -30,6 +31,7 @@ const tabs: { id: Tab; label: string; readyKey?: keyof AdminSettingsView["status
   { id: "paystack", label: "Paystack", readyKey: "paystackReady" },
   { id: "splitsms", label: "SplitSMS", readyKey: "splitsmsReady" },
   { id: "smtp", label: "Email", readyKey: "emailReady" },
+  { id: "media", label: "Media", readyKey: "ftpReady" },
   { id: "notifications", label: "Notifications" },
 ];
 
@@ -722,6 +724,7 @@ export function SettingsForm({
   const tab: Tab =
     tabParam === "splitsms" ||
     tabParam === "smtp" ||
+    tabParam === "media" ||
     tabParam === "notifications" ||
     tabParam === "paystack"
       ? tabParam
@@ -765,6 +768,16 @@ export function SettingsForm({
           <span className="admin-tours-stat-label">
             Email{settings.status.resendReady ? " · Resend" : settings.status.smtpReady ? " · SMTP" : ""}
           </span>
+        </div>
+        <div className="admin-tours-stat">
+          <span
+            className={`admin-tours-stat-value ${
+              settings.status.ftpReady ? "text-[#007017]" : "text-[#646970]"
+            }`}
+          >
+            {settings.status.ftpReady ? "Connected" : "Setup"}
+          </span>
+          <span className="admin-tours-stat-label">Media FTP</span>
         </div>
       </div>
 
@@ -821,6 +834,10 @@ export function SettingsForm({
 
           {tab === "smtp" ? (
             <EmailPanel settings={settings} revision={settings.revision} />
+          ) : null}
+
+          {tab === "media" ? (
+            <FtpMediaSettingsPanel settings={settings} revision={settings.revision} />
           ) : null}
 
           {tab === "notifications" ? (

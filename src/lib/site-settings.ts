@@ -3,6 +3,7 @@ import { getSql, withSqlTimeout } from "@/lib/db/postgres";
 import type {
   AdminSettingsView,
   ConsultationAvailabilitySettings,
+  FtpSettings,
   NotificationSettings,
   PaystackSettings,
   ResendSettings,
@@ -10,6 +11,7 @@ import type {
   SplitSmsSettings,
   SmtpSettings,
 } from "@/lib/settings-types";
+import { isFtpUploadReady } from "@/lib/ftp-media";
 import type { EmailDeliveryConfig } from "@/lib/email-delivery";
 import {
   DEFAULT_CONSULTATION_AVAILABILITY,
@@ -62,6 +64,19 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     emailCustomerOnContactMessage: true,
   },
   consultationAvailability: DEFAULT_CONSULTATION_AVAILABILITY,
+  ftp: {
+    enabled: false,
+    host: "",
+    port: 21,
+    username: "",
+    password: "",
+    secure: true,
+    remoteFolder: "public_html/media",
+    publicBaseUrl: "",
+    lastTestAt: "",
+    lastTestOk: false,
+    lastTestMessage: "",
+  },
 };
 
 function settingsFromEnv(): Partial<SiteSettings> {
@@ -97,6 +112,7 @@ function deepMergeSettings(base: SiteSettings, patch: Partial<SiteSettings>): Si
     consultationAvailability: normalizeConsultationAvailability(
       patch.consultationAvailability ?? base.consultationAvailability,
     ),
+    ftp: { ...base.ftp, ...patch.ftp },
   };
 }
 
@@ -217,12 +233,26 @@ export async function getAdminSettingsView(): Promise<AdminSettingsView> {
       hasApiKey: Boolean(settings.resend.apiKey),
     },
     notifications: settings.notifications,
+    ftp: {
+      enabled: settings.ftp.enabled,
+      host: settings.ftp.host,
+      port: settings.ftp.port,
+      username: settings.ftp.username,
+      secure: settings.ftp.secure,
+      remoteFolder: settings.ftp.remoteFolder,
+      publicBaseUrl: settings.ftp.publicBaseUrl,
+      lastTestAt: settings.ftp.lastTestAt,
+      lastTestOk: settings.ftp.lastTestOk,
+      lastTestMessage: settings.ftp.lastTestMessage,
+      hasPassword: Boolean(settings.ftp.password),
+    },
     status: {
       paystackReady: isPaystackReady(settings),
       splitsmsReady: isSplitSmsReady(settings),
       smtpReady: isSmtpReady(settings),
       resendReady: isResendReady(settings),
       emailReady: isEmailReady(settings),
+      ftpReady: isFtpUploadReady(settings.ftp),
     },
     revision,
   };
@@ -343,6 +373,98 @@ export async function saveNotificationSettings(
     },
   };
   await persistSettings(next, userId);
+}
+
+export type FtpSettingsInput = {
+  enabled: boolean;
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  secure: boolean;
+  remoteFolder: string;
+  publicBaseUrl: string;
+};
+
+function connectionIdentityChanged(current: FtpSettings, next: FtpSettingsInput) {
+  return (
+    current.host.trim() !== next.host.trim() ||
+    current.username.trim() !== next.username.trim() ||
+    current.remoteFolder.trim() !== next.remoteFolder.trim() ||
+    Number(current.port) !== Number(next.port) ||
+    current.secure !== next.secure ||
+    current.publicBaseUrl.trim() !== next.publicBaseUrl.trim() ||
+    (Boolean(next.password.trim()) && next.password.trim() !== current.password)
+  );
+}
+
+export async function saveFtpSettings(
+  input: FtpSettingsInput,
+  userId: string,
+): Promise<void> {
+  const current = await getSiteSettings();
+  const password = preserveSecret(input.password, current.ftp.password);
+  const resetTest = connectionIdentityChanged(current.ftp, input);
+
+  const next: SiteSettings = {
+    ...current,
+    ftp: {
+      enabled: input.enabled,
+      host: input.host.trim(),
+      port: Number(input.port) || 21,
+      username: input.username.trim(),
+      password,
+      secure: input.secure,
+      remoteFolder: input.remoteFolder.trim() || "public_html/media",
+      publicBaseUrl: input.publicBaseUrl.trim().replace(/\/+$/, ""),
+      lastTestAt: resetTest ? "" : current.ftp.lastTestAt,
+      lastTestOk: resetTest ? false : current.ftp.lastTestOk,
+      lastTestMessage: resetTest
+        ? "Saved. Run Test connection to verify."
+        : current.ftp.lastTestMessage,
+    },
+  };
+  await persistSettings(next, userId);
+}
+
+export async function recordFtpTestResult(
+  result: { ok: boolean; message: string },
+  userId: string,
+): Promise<void> {
+  const current = await getSiteSettings();
+  const next: SiteSettings = {
+    ...current,
+    ftp: {
+      ...current.ftp,
+      lastTestAt: new Date().toISOString(),
+      lastTestOk: result.ok,
+      lastTestMessage: result.message,
+      enabled: result.ok ? true : current.ftp.enabled,
+    },
+  };
+  await persistSettings(next, userId);
+}
+
+export async function disconnectFtpSettings(userId: string): Promise<void> {
+  const current = await getSiteSettings();
+  const next: SiteSettings = {
+    ...current,
+    ftp: {
+      ...current.ftp,
+      enabled: false,
+      password: "",
+      lastTestOk: false,
+      lastTestAt: new Date().toISOString(),
+      lastTestMessage: "Disconnected.",
+    },
+  };
+  await persistSettings(next, userId);
+}
+
+export async function getFtpSettingsForUpload(): Promise<FtpSettings | null> {
+  const settings = await getSiteSettings();
+  if (!isFtpUploadReady(settings.ftp)) return null;
+  return settings.ftp;
 }
 
 export async function getPaystackSecretKey() {

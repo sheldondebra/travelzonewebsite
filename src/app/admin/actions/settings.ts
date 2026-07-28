@@ -4,12 +4,17 @@ import { revalidatePath } from "next/cache";
 import { sendTestEmail } from "@/lib/email";
 import { getSplitSmsBalance, sendTestSms, type SplitSmsBalance } from "@/lib/splitsms";
 import {
+  disconnectFtpSettings,
+  getSiteSettings,
+  recordFtpTestResult,
+  saveFtpSettings,
   saveNotificationSettings,
   savePaystackSettings,
   saveResendSettings,
   saveSmtpSettings,
   saveSplitSmsSettings,
 } from "@/lib/site-settings";
+import { testFtpConnection } from "@/lib/ftp-media";
 import { requireAdmin } from "@/lib/auth/staff";
 
 export type SettingsActionResult =
@@ -214,6 +219,82 @@ export async function testSplitSmsAction(
     return {
       success: false,
       error: error instanceof Error ? error.message : "SplitSMS test failed.",
+    };
+  }
+}
+
+export async function saveFtpSettingsAction(
+  _prev: SettingsActionResult | undefined,
+  formData: FormData,
+): Promise<SettingsActionResult> {
+  try {
+    const { user } = await requireAdmin();
+    await saveFtpSettings(
+      {
+        enabled: checkbox(formData.get("enabled")),
+        host: String(formData.get("host") ?? ""),
+        port: Number(formData.get("port") ?? 21),
+        username: String(formData.get("username") ?? ""),
+        password: String(formData.get("password") ?? ""),
+        secure: checkbox(formData.get("secure")),
+        remoteFolder: String(formData.get("remoteFolder") ?? "public_html/media"),
+        publicBaseUrl: String(formData.get("publicBaseUrl") ?? ""),
+      },
+      user.id,
+    );
+    revalidatePath("/admin/settings");
+    return { success: true, message: "FTP media settings saved." };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Could not save FTP settings.",
+    };
+  }
+}
+
+export async function testFtpSettingsAction(
+  _prev: SettingsActionResult | undefined,
+  _formData: FormData,
+): Promise<SettingsActionResult> {
+  try {
+    const { user } = await requireAdmin();
+    const settings = await getSiteSettings();
+    const result = await testFtpConnection(settings.ftp);
+    await recordFtpTestResult(
+      { ok: result.ok, message: result.message },
+      user.id,
+    );
+    revalidatePath("/admin/settings");
+    if (!result.ok) {
+      return { success: false, error: result.message };
+    }
+    return {
+      success: true,
+      message: result.samplePublicUrl
+        ? `${result.message} Public URL example: ${result.samplePublicUrl}`
+        : result.message,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "FTP connection test failed.",
+    };
+  }
+}
+
+export async function disconnectFtpSettingsAction(
+  _prev: SettingsActionResult | undefined,
+  _formData: FormData,
+): Promise<SettingsActionResult> {
+  try {
+    const { user } = await requireAdmin();
+    await disconnectFtpSettings(user.id);
+    revalidatePath("/admin/settings");
+    return { success: true, message: "FTP disconnected." };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Could not disconnect FTP.",
     };
   }
 }
