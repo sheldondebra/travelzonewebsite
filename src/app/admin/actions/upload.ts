@@ -4,7 +4,7 @@ import { compressImage } from "@/lib/image-compress";
 import { requireStaff } from "@/lib/auth/staff";
 import { saveMediaFile } from "@/lib/media-storage";
 
-const ALLOWED_UPLOAD_ROOTS = new Set(["blog", "tours", "team", "uploads"]);
+const ALLOWED_UPLOAD_ROOTS = new Set(["blog", "tours", "team", "hero", "uploads"]);
 
 function sanitizeUploadFolder(folder: string): string {
   const normalized = folder

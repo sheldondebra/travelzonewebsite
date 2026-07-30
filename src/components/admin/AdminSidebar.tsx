@@ -12,6 +12,7 @@ import {
   HiMapPin,
   HiNewspaper,
   HiPaperAirplane,
+  HiPhoto,
   HiSquares2X2,
   HiUserGroup,
   HiUsers,
@@ -51,6 +52,12 @@ const menuSections: MenuSection[] = [
       { href: "/admin/messages", label: "Messages", icon: HiEnvelope },
       { href: "/admin/newsletter", label: "Newsletter", icon: HiEnvelopeOpen },
       { href: "/admin/about", label: "About team", icon: HiUserGroup },
+      {
+        href: "/admin/hero",
+        label: "Hero slider",
+        adminOnly: true,
+        icon: HiPhoto,
+      },
     ],
   },
   {

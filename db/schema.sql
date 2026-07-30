@@ -297,3 +297,103 @@ on conflict (id) do update set
   sort_order = excluded.sort_order,
   status = excluded.status,
   updated_at = now();
+
+-- Home hero slider
+create table if not exists public.hero_slides (
+  id uuid primary key default gen_random_uuid(),
+  image_url text not null,
+  image_alt text not null default '',
+  eyebrow text not null default '',
+  headline text not null,
+  body text not null default '',
+  ctas jsonb not null default '[]'::jsonb,
+  sort_order integer not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists hero_slides_sort_idx
+  on public.hero_slides (sort_order asc, updated_at desc);
+create index if not exists hero_slides_active_idx
+  on public.hero_slides (is_active);
+
+drop trigger if exists hero_slides_updated_at on public.hero_slides;
+create trigger hero_slides_updated_at
+  before update on public.hero_slides
+  for each row execute function public.set_updated_at();
+
+insert into public.hero_slides (
+  id, image_url, image_alt, eyebrow, headline, body, ctas, sort_order, is_active
+)
+values
+  (
+    'b1111111-1111-4111-8111-111111111101',
+    '/images/hero/office-consultation.jpg',
+    'TravelZone team consulting with a client in our East Legon office',
+    '#2 Boundary Road · East Legon · Accra',
+    'Experience Ghana with Travel Zone.',
+    'Flights, hotels, tour packages, and group travel — booked from our office or over the phone. Walk in anytime during office hours.',
+    '[
+      {"label":"Book a trip","href":"/book","style":"primary"},
+      {"label":"Book a consultation","href":"/consultation","style":"secondary"},
+      {"label":"View packages","href":"/tours","style":"secondary"}
+    ]'::jsonb,
+    1,
+    true
+  ),
+  (
+    'b1111111-1111-4111-8111-111111111102',
+    '/images/hero/office-main.jpg',
+    'TravelZone office interior with branded glass partitions',
+    '#2 Boundary Road · East Legon · Accra',
+    'Experience Ghana with Travel Zone.',
+    'Flights, hotels, tour packages, and group travel — booked from our office or over the phone. Walk in anytime during office hours.',
+    '[
+      {"label":"Book a trip","href":"/book","style":"primary"},
+      {"label":"Book a consultation","href":"/consultation","style":"secondary"},
+      {"label":"View packages","href":"/tours","style":"secondary"}
+    ]'::jsonb,
+    2,
+    true
+  ),
+  (
+    'b1111111-1111-4111-8111-111111111103',
+    '/images/hero/reception.jpg',
+    'TravelZone reception area in East Legon, Accra',
+    '#2 Boundary Road · East Legon · Accra',
+    'Experience Ghana with Travel Zone.',
+    'Flights, hotels, tour packages, and group travel — booked from our office or over the phone. Walk in anytime during office hours.',
+    '[
+      {"label":"Book a trip","href":"/book","style":"primary"},
+      {"label":"Book a consultation","href":"/consultation","style":"secondary"},
+      {"label":"View packages","href":"/tours","style":"secondary"}
+    ]'::jsonb,
+    3,
+    true
+  ),
+  (
+    'b1111111-1111-4111-8111-111111111104',
+    '/images/hero/travel-wall.jpg',
+    'TravelZone branded travel consultation space',
+    '#2 Boundary Road · East Legon · Accra',
+    'Experience Ghana with Travel Zone.',
+    'Flights, hotels, tour packages, and group travel — booked from our office or over the phone. Walk in anytime during office hours.',
+    '[
+      {"label":"Book a trip","href":"/book","style":"primary"},
+      {"label":"Book a consultation","href":"/consultation","style":"secondary"},
+      {"label":"View packages","href":"/tours","style":"secondary"}
+    ]'::jsonb,
+    4,
+    true
+  )
+on conflict (id) do update set
+  image_url = excluded.image_url,
+  image_alt = excluded.image_alt,
+  eyebrow = excluded.eyebrow,
+  headline = excluded.headline,
+  body = excluded.body,
+  ctas = excluded.ctas,
+  sort_order = excluded.sort_order,
+  is_active = excluded.is_active,
+  updated_at = now();

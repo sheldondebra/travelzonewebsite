@@ -16,6 +16,7 @@ import {
   BlogSectionSkeleton,
   ToursSectionSkeleton,
 } from "@/components/home/HomeSectionSkeleton";
+import { getPublishedHeroSlides } from "@/lib/hero-slides-store";
 import { createMetadata } from "@/lib/seo";
 
 export const revalidate = 3600;
@@ -27,12 +28,14 @@ export const metadata: Metadata = createMetadata({
   path: "/",
 });
 
-export default function Home() {
+export default async function Home() {
+  const heroSlides = await getPublishedHeroSlides();
+
   return (
     <>
       <Header />
       <main>
-        <Hero />
+        <Hero slides={heroSlides} />
         <TrustBanner />
         <StatsAbout />
         <WhyUs />

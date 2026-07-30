@@ -3,6 +3,10 @@ import {
   staticBlogPosts,
   staticTours,
 } from "@/lib/seed-data";
+import {
+  DEFAULT_HERO_SLIDE_IDS,
+  fallbackHeroSlides,
+} from "@/lib/hero-slides";
 import { getDatabaseUrl } from "./db-url";
 import { loadLocalEnv } from "./load-env";
 import { createPostgresClient } from "./postgres-client";
@@ -98,7 +102,37 @@ async function seed() {
       `;
     }
 
-    console.log(`Seeded ${staticTours.length} tours and ${staticBlogPosts.length} blog posts.`);
+    for (const [index, slide] of fallbackHeroSlides.entries()) {
+      await sql`
+        insert into public.hero_slides (
+          id, image_url, image_alt, eyebrow, headline, body, ctas, sort_order, is_active
+        ) values (
+          ${DEFAULT_HERO_SLIDE_IDS[index]}::uuid,
+          ${slide.imageUrl},
+          ${slide.imageAlt},
+          ${slide.eyebrow},
+          ${slide.headline},
+          ${slide.body},
+          ${sql.json(slide.ctas)},
+          ${index + 1},
+          true
+        )
+        on conflict (id) do update set
+          image_url = excluded.image_url,
+          image_alt = excluded.image_alt,
+          eyebrow = excluded.eyebrow,
+          headline = excluded.headline,
+          body = excluded.body,
+          ctas = excluded.ctas,
+          sort_order = excluded.sort_order,
+          is_active = excluded.is_active,
+          updated_at = now()
+      `;
+    }
+
+    console.log(
+      `Seeded ${staticTours.length} tours, ${staticBlogPosts.length} blog posts, and ${fallbackHeroSlides.length} hero slides.`,
+    );
   } finally {
     await sql.end();
   }
