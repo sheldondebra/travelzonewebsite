@@ -1,7 +1,7 @@
 import { contactInfo } from "@/lib/content";
 import { parseDisplayDateToIso } from "@/lib/date-utils";
 import { socialProfiles } from "@/lib/social";
-import { absoluteShareImageUrl, absoluteUrl, getSiteUrl, siteConfig } from "@/lib/seo";
+import { absoluteMediaUrl, absoluteUrl, getSiteUrl, siteConfig } from "@/lib/seo";
 
 export function organizationJsonLd() {
   return {
@@ -68,7 +68,7 @@ export function tourJsonLd(tour: {
   duration: string;
   location: string;
 }) {
-  const imageUrl = absoluteShareImageUrl(tour.image);
+  const imageUrl = absoluteMediaUrl(tour.image);
 
   return {
     "@context": "https://schema.org",
@@ -106,7 +106,7 @@ export function blogPostJsonLd(post: {
   date: string;
   category: string;
 }) {
-  const imageUrl = absoluteShareImageUrl(post.image);
+  const imageUrl = absoluteMediaUrl(post.image);
 
   return {
     "@context": "https://schema.org",

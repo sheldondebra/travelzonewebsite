@@ -1,4 +1,11 @@
 import type { Metadata } from "next";
+import {
+  canProxyShareImage,
+  ogImagePath,
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_TYPE,
+  OG_IMAGE_WIDTH,
+} from "@/lib/og-image";
 
 export const siteConfig = {
   name: "Travel Zone Ghana",
@@ -33,8 +40,8 @@ export function getSiteUrl() {
   return normalized;
 }
 
-/** Absolute URL safe for Open Graph / Twitter link previews. */
-export function absoluteShareImageUrl(image: string) {
+/** Absolute URL for an image stored locally or on a remote host. */
+export function absoluteMediaUrl(image: string) {
   const trimmed = image.trim();
   if (!trimmed) return absoluteUrl(siteConfig.defaultOgImage);
 
@@ -43,7 +50,6 @@ export function absoluteShareImageUrl(image: string) {
       const parsed = new URL(trimmed);
       if (parsed.hostname === "travelzonegh.org") {
         parsed.hostname = "www.travelzonegh.org";
-        return parsed.toString();
       }
       return parsed.toString();
     } catch {
@@ -52,6 +58,17 @@ export function absoluteShareImageUrl(image: string) {
   }
 
   return absoluteUrl(trimmed.startsWith("/") ? trimmed : `/${trimmed}`);
+}
+
+/**
+ * Absolute URL safe for Open Graph / Twitter link previews. Featured images are
+ * re-encoded as JPEG at 1200x630 because WhatsApp ignores WebP thumbnails and
+ * falls back to the site favicon.
+ */
+export function absoluteShareImageUrl(image: string) {
+  const trimmed = image.trim() || siteConfig.defaultOgImage;
+  if (!canProxyShareImage(trimmed)) return absoluteMediaUrl(trimmed);
+  return absoluteUrl(ogImagePath(trimmed));
 }
 
 export function absoluteUrl(path = "/") {
@@ -111,8 +128,9 @@ export function createMetadata({
       images: [
         {
           url: imageUrl,
-          width: 1200,
-          height: 630,
+          width: OG_IMAGE_WIDTH,
+          height: OG_IMAGE_HEIGHT,
+          type: OG_IMAGE_TYPE,
           alt: title,
         },
       ],
@@ -128,7 +146,7 @@ export function createMetadata({
   };
 }
 
-const defaultOgImageUrl = absoluteUrl(siteConfig.defaultOgImage);
+const defaultOgImageUrl = absoluteShareImageUrl(siteConfig.defaultOgImage);
 
 export const rootMetadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
@@ -167,8 +185,9 @@ export const rootMetadata: Metadata = {
     images: [
       {
         url: defaultOgImageUrl,
-        width: 1200,
-        height: 630,
+        width: OG_IMAGE_WIDTH,
+        height: OG_IMAGE_HEIGHT,
+        type: OG_IMAGE_TYPE,
         alt: siteConfig.name,
       },
     ],
