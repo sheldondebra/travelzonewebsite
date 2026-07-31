@@ -11,11 +11,47 @@ export const siteConfig = {
 } as const;
 
 export function getSiteUrl() {
-  const url =
+  const raw =
     process.env.NEXT_PUBLIC_SITE_URL ??
     process.env.APP_URL ??
-    "https://travelzonegh.com";
-  return url.replace(/\/$/, "");
+    "https://www.travelzonegh.org";
+
+  const normalized = raw.replace(/\/$/, "");
+
+  try {
+    const parsed = new URL(normalized);
+    // Apex travelzonegh.org is not served on Vercel (404s pages + /media).
+    // Share crawlers (WhatsApp/Facebook) fetch og:image from this host and get no thumbnail.
+    if (parsed.hostname === "travelzonegh.org") {
+      parsed.hostname = "www.travelzonegh.org";
+      return parsed.origin;
+    }
+  } catch {
+    // keep normalized string below
+  }
+
+  return normalized;
+}
+
+/** Absolute URL safe for Open Graph / Twitter link previews. */
+export function absoluteShareImageUrl(image: string) {
+  const trimmed = image.trim();
+  if (!trimmed) return absoluteUrl(siteConfig.defaultOgImage);
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.hostname === "travelzonegh.org") {
+        parsed.hostname = "www.travelzonegh.org";
+        return parsed.toString();
+      }
+      return parsed.toString();
+    } catch {
+      return trimmed;
+    }
+  }
+
+  return absoluteUrl(trimmed.startsWith("/") ? trimmed : `/${trimmed}`);
 }
 
 export function absoluteUrl(path = "/") {
@@ -49,7 +85,7 @@ export function createMetadata({
   authors,
 }: CreateMetadataOptions): Metadata {
   const url = absoluteUrl(path);
-  const imageUrl = ogImage.startsWith("http") ? ogImage : absoluteUrl(ogImage);
+  const imageUrl = absoluteShareImageUrl(ogImage);
 
   return {
     title,
