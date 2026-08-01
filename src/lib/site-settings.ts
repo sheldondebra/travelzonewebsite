@@ -3,6 +3,7 @@ import { getSql, withSqlTimeout } from "@/lib/db/postgres";
 import type {
   AdminSettingsView,
   ConsultationAvailabilitySettings,
+  ExchangeRateSettings,
   FtpSettings,
   NotificationSettings,
   PaystackSettings,
@@ -77,7 +78,29 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     lastTestOk: false,
     lastTestMessage: "",
   },
+  exchangeRate: {
+    usdToGhs: 15.5,
+    useLive: false,
+  },
 };
+
+function envUsdToGhsRate() {
+  const raw =
+    process.env.NEXT_PUBLIC_USD_TO_GHS_RATE ?? process.env.USD_TO_GHS_RATE ?? "15.5";
+  const rate = Number(raw);
+  return Number.isFinite(rate) && rate > 0 ? rate : 15.5;
+}
+
+function normalizeExchangeRate(
+  value: Partial<ExchangeRateSettings> | null | undefined,
+  fallback: ExchangeRateSettings,
+): ExchangeRateSettings {
+  const rate = Number(value?.usdToGhs);
+  return {
+    usdToGhs: Number.isFinite(rate) && rate > 0 ? rate : fallback.usdToGhs,
+    useLive: Boolean(value?.useLive ?? fallback.useLive),
+  };
+}
 
 function settingsFromEnv(): Partial<SiteSettings> {
   return {
@@ -99,6 +122,10 @@ function settingsFromEnv(): Partial<SiteSettings> {
       fromEmail: process.env.RESEND_FROM_EMAIL?.trim() ?? "",
       fromName: process.env.RESEND_FROM_NAME?.trim() || "Travel Zone Ghana",
     },
+    exchangeRate: {
+      usdToGhs: envUsdToGhsRate(),
+      useLive: process.env.USE_LIVE_EXCHANGE_RATE === "true",
+    },
   };
 }
 
@@ -113,6 +140,7 @@ function deepMergeSettings(base: SiteSettings, patch: Partial<SiteSettings>): Si
       patch.consultationAvailability ?? base.consultationAvailability,
     ),
     ftp: { ...base.ftp, ...patch.ftp },
+    exchangeRate: normalizeExchangeRate(patch.exchangeRate, base.exchangeRate),
   };
 }
 
@@ -233,6 +261,7 @@ export async function getAdminSettingsView(): Promise<AdminSettingsView> {
       hasApiKey: Boolean(settings.resend.apiKey),
     },
     notifications: settings.notifications,
+    exchangeRate: settings.exchangeRate,
     ftp: {
       enabled: settings.ftp.enabled,
       host: settings.ftp.host,
@@ -373,6 +402,31 @@ export async function saveNotificationSettings(
     },
   };
   await persistSettings(next, userId);
+}
+
+export async function saveExchangeRateSettings(
+  input: ExchangeRateSettings,
+  userId: string,
+): Promise<void> {
+  const rate = Number(input.usdToGhs);
+  if (!Number.isFinite(rate) || rate <= 0) {
+    throw new Error("USD to GHS rate must be a positive number.");
+  }
+
+  const current = await getSiteSettings();
+  const next: SiteSettings = {
+    ...current,
+    exchangeRate: {
+      usdToGhs: Math.round(rate * 10000) / 10000,
+      useLive: Boolean(input.useLive),
+    },
+  };
+  await persistSettings(next, userId);
+}
+
+export async function getExchangeRateSettings(): Promise<ExchangeRateSettings> {
+  const settings = await getSiteSettings();
+  return settings.exchangeRate;
 }
 
 export type FtpSettingsInput = {

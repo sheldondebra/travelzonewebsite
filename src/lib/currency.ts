@@ -4,17 +4,27 @@ export type ExchangeRateInfo = {
   updatedAt: string;
 };
 
+export type ExchangeRateOptions = {
+  usdToGhs: number;
+  useLive: boolean;
+};
+
 let cachedRate: (ExchangeRateInfo & { expiresAt: number }) | null = null;
 
 const CACHE_MS = 60 * 60 * 1000;
 
-/** Rate from env — available on client and server without fetching. */
+/** Sync env fallback for client initial render before /api/exchange-rate returns. */
 export function getConfiguredUsdToGhsRate() {
-  return Number(
+  const rate = Number(
     process.env.NEXT_PUBLIC_USD_TO_GHS_RATE ??
       process.env.USD_TO_GHS_RATE ??
       "15.5",
   );
+  return Number.isFinite(rate) && rate > 0 ? rate : 15.5;
+}
+
+export function clearExchangeRateCache() {
+  cachedRate = null;
 }
 
 async function fetchLiveUsdToGhsRate(): Promise<number | null> {
@@ -41,10 +51,20 @@ async function fetchLiveUsdToGhsRate(): Promise<number | null> {
   }
 }
 
-/** USD → GHS rate for checkout. Uses configured business rate unless USE_LIVE_EXCHANGE_RATE=true. */
-export async function getUsdToGhsRateAsync(): Promise<ExchangeRateInfo> {
-  const configured = getConfiguredUsdToGhsRate();
-  const useLive = process.env.USE_LIVE_EXCHANGE_RATE === "true";
+/**
+ * Resolve USD → GHS for checkout. Pass admin settings when available;
+ * otherwise falls back to env defaults.
+ */
+export async function resolveUsdToGhsRate(
+  options?: Partial<ExchangeRateOptions> | null,
+): Promise<ExchangeRateInfo> {
+  const configuredRaw = Number(options?.usdToGhs);
+  const configured =
+    Number.isFinite(configuredRaw) && configuredRaw > 0
+      ? configuredRaw
+      : getConfiguredUsdToGhsRate();
+  const useLive =
+    options?.useLive ?? process.env.USE_LIVE_EXCHANGE_RATE === "true";
 
   if (!useLive) {
     return {

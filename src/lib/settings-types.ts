@@ -76,6 +76,13 @@ export type FtpSettings = {
   lastTestMessage: string;
 };
 
+export type ExchangeRateSettings = {
+  /** Manual USD → GHS business rate used when live market rate is off. */
+  usdToGhs: number;
+  /** When true, checkout uses the live market rate (falls back to usdToGhs). */
+  useLive: boolean;
+};
+
 export type SiteSettings = {
   paystack: PaystackSettings;
   splitsms: SplitSmsSettings;
@@ -84,6 +91,7 @@ export type SiteSettings = {
   notifications: NotificationSettings;
   consultationAvailability: ConsultationAvailabilitySettings;
   ftp: FtpSettings;
+  exchangeRate: ExchangeRateSettings;
 };
 
 export type AdminSettingsView = {
@@ -93,6 +101,7 @@ export type AdminSettingsView = {
   resend: ResendSettings & { hasApiKey: boolean };
   notifications: NotificationSettings;
   ftp: Omit<FtpSettings, "password"> & { hasPassword: boolean };
+  exchangeRate: ExchangeRateSettings;
   status: {
     paystackReady: boolean;
     splitsmsReady: boolean;

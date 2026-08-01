@@ -23,7 +23,7 @@ export default async function AdminSettingsPage() {
     <>
       <AdminPageHeader
         title="Settings"
-        description="Payments, SMS, email, and notification preferences for your site."
+        description="Payments, SMS, email, dollar rate, and notification preferences for your site."
       />
       <Suspense fallback={<SettingsFormFallback />}>
         <SettingsForm

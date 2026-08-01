@@ -12,7 +12,7 @@ import {
   initializePaystackTransaction,
 } from "@/lib/paystack";
 import { getTourBySlug } from "@/lib/content-public-tours";
-import { getTourPaymentTotalGhsAsync } from "@/lib/tours";
+import { getTourPaymentTotalGhsAsync } from "@/lib/currency-server";
 import { isPaystackConfiguredAsync } from "@/lib/payment-config";
 import { rateLimitFromHeaders } from "@/lib/rate-limit";
 

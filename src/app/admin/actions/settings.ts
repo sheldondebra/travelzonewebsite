@@ -7,6 +7,7 @@ import {
   disconnectFtpSettings,
   getSiteSettings,
   recordFtpTestResult,
+  saveExchangeRateSettings,
   saveFtpSettings,
   saveNotificationSettings,
   savePaystackSettings,
@@ -14,6 +15,7 @@ import {
   saveSmtpSettings,
   saveSplitSmsSettings,
 } from "@/lib/site-settings";
+import { clearExchangeRateCache } from "@/lib/currency";
 import { testFtpConnection } from "@/lib/ftp-media";
 import { requireAdmin } from "@/lib/auth/staff";
 
@@ -165,6 +167,38 @@ export async function saveNotificationSettingsAction(
       success: false,
       error:
         error instanceof Error ? error.message : "Could not save notification settings.",
+    };
+  }
+}
+
+export async function saveExchangeRateSettingsAction(
+  _prev: SettingsActionResult | undefined,
+  formData: FormData,
+): Promise<SettingsActionResult> {
+  try {
+    const { user } = await requireAdmin();
+    const usdToGhs = Number(formData.get("usdToGhs"));
+    if (!Number.isFinite(usdToGhs) || usdToGhs <= 0) {
+      return { success: false, error: "Enter a valid USD to GHS rate greater than 0." };
+    }
+
+    await saveExchangeRateSettings(
+      {
+        usdToGhs,
+        useLive: checkbox(formData.get("useLive")),
+      },
+      user.id,
+    );
+    clearExchangeRateCache();
+    revalidatePath("/admin/settings");
+    revalidatePath("/api/exchange-rate");
+    revalidatePath("/book");
+    return { success: true, message: "Dollar rate settings saved." };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Could not save dollar rate settings.",
     };
   }
 }

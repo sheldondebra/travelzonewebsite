@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useActionState, useState, type ReactNode } from "react";
 import {
+  saveExchangeRateSettingsAction,
   saveNotificationSettingsAction,
   savePaystackSettingsAction,
   saveResendSettingsAction,
@@ -18,7 +19,7 @@ import { SplitSmsBalancePanel } from "@/components/admin/SplitSmsBalancePanel";
 import type { AdminSettingsView } from "@/lib/settings-types";
 import type { SplitSmsBalance } from "@/lib/splitsms";
 
-type Tab = "paystack" | "splitsms" | "smtp" | "media" | "notifications";
+type Tab = "paystack" | "currency" | "splitsms" | "smtp" | "media" | "notifications";
 
 type Props = {
   settings: AdminSettingsView;
@@ -29,6 +30,7 @@ type Props = {
 
 const tabs: { id: Tab; label: string; readyKey?: keyof AdminSettingsView["status"] }[] = [
   { id: "paystack", label: "Paystack", readyKey: "paystackReady" },
+  { id: "currency", label: "Dollar rate" },
   { id: "splitsms", label: "SplitSMS", readyKey: "splitsmsReady" },
   { id: "smtp", label: "Email", readyKey: "emailReady" },
   { id: "media", label: "Media", readyKey: "ftpReady" },
@@ -118,6 +120,65 @@ function FormFooter({
         {pending ? "Saving…" : label}
       </button>
     </div>
+  );
+}
+
+function CurrencyPanel({
+  settings,
+  revision,
+}: {
+  settings: AdminSettingsView;
+  revision: string;
+}) {
+  const [state, action, pending] = useActionState(saveExchangeRateSettingsAction, undefined);
+  useAdminActionFeedback(state, pending, { loadingMessage: "Saving dollar rate…" });
+
+  return (
+    <AdminWidget title="USD → GHS dollar rate">
+      <p className="admin-field-hint mt-0">
+        Used when converting USD tour packages to Ghana Cedis for Paystack checkout.
+      </p>
+
+      <form key={`currency-${revision}`} action={action} className="mt-4 space-y-4">
+        <div>
+          <label htmlFor="usd-to-ghs" className="admin-label">
+            Manual rate (1 USD = ? GHS)
+          </label>
+          <input
+            id="usd-to-ghs"
+            name="usdToGhs"
+            type="number"
+            min="0.01"
+            step="0.01"
+            required
+            defaultValue={settings.exchangeRate.usdToGhs}
+            className="admin-input"
+          />
+          <p className="admin-field-hint">
+            Example: enter 15.50 if 1 US dollar equals GHS 15.50.
+          </p>
+        </div>
+
+        <Toggle
+          id="use-live-rate"
+          name="useLive"
+          label="Use live market rate"
+          description="When on, checkout uses the current market USD→GHS rate. If the market feed is unavailable, the manual rate above is used."
+          defaultChecked={settings.exchangeRate.useLive}
+        />
+
+        <AdminNotice variant="info">
+          {settings.exchangeRate.useLive
+            ? "Live mode is on — customers pay at the market rate when available."
+            : `Manual mode — customers currently convert at 1 USD = GHS ${settings.exchangeRate.usdToGhs.toLocaleString(
+                undefined,
+                { minimumFractionDigits: 2, maximumFractionDigits: 4 },
+              )}.`}
+        </AdminNotice>
+
+        <FormFooter pending={pending} label="Save dollar rate" />
+      </form>
+    </AdminWidget>
   );
 }
 
@@ -409,7 +470,7 @@ function EmailPanel({ settings, revision }: { settings: AdminSettingsView; revis
                 name="fromEmail"
                 type="email"
                 defaultValue={settings.resend.fromEmail}
-                placeholder="hello@travelzonegh.com"
+                placeholder="info@travelzonegh.org"
                 className="admin-input"
               />
             </div>
@@ -726,6 +787,7 @@ export function SettingsForm({
     tabParam === "smtp" ||
     tabParam === "media" ||
     tabParam === "notifications" ||
+    tabParam === "currency" ||
     tabParam === "paystack"
       ? tabParam
       : "paystack";
@@ -821,6 +883,10 @@ export function SettingsForm({
               webhookUrl={webhookUrl}
               revision={settings.revision}
             />
+          ) : null}
+
+          {tab === "currency" ? (
+            <CurrencyPanel settings={settings} revision={settings.revision} />
           ) : null}
 
           {tab === "splitsms" ? (
